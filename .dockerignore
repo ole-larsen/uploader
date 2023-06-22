@@ -1,0 +1,12 @@
+bin
+.env.template
+.idea
+.docker
+LICENSE
+README.md
+.gitignore
+go-swagger
+.DS_Store
+SQL
+dapp-environment
+dapp

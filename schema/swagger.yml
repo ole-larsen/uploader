@@ -1,0 +1,371 @@
+---
+swagger: "2.0"
+info:
+  description: ""
+  title: "Uplader Service API"
+  version: "1.0.0"
+host: "uploader"
+basePath: "/api/v1"
+schemes:
+- http
+securityDefinitions:
+  bearer:
+    type: apiKey
+    in: header
+    name: Authorization
+  x-token:
+    type: apiKey
+    in: header
+    name: x-token
+paths:
+  /ping:
+    get:
+      security:
+        - x-token: [ ]
+      produces:
+        - application/json
+      parameters: []
+      responses:
+        '200':
+          description: "ping response"
+          schema:
+            "$ref": "#/definitions/ping"
+        '500':
+          description: "some error occurs"
+          schema:
+            "$ref": "#/definitions/error"
+      tags:
+        - public
+      summary: "This API endpoint always responds with \"pong\". When used over
+        HTTP this API endpoint could also be used to measure network delays between
+        your software and the API server."
+  /metrics:
+    get:
+      tags:
+        - instruments
+      summary: "Prometheus metrics"
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: ok
+          schema:
+            $ref: "#/definitions/metrics"
+  /uploader/files:
+    get:
+      security:
+        - x-token: [ ]
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - type: string
+          name: name
+          in: query
+      responses:
+        '200':
+          description: An array of uploaded files
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/file'
+        '500':
+          description: "When some error occurs"
+          schema:
+            "$ref": "#/definitions/error"
+      tags:
+        - uploader
+    post:
+      security:
+        - x-token: [ ]
+      summary: Uploads a file.
+      consumes:
+        - multipart/form-data
+      parameters:
+        - in: formData
+          name: id
+          type: string
+          description: generated file id
+        - in: formData
+          name: name
+          type: string
+          description: image name
+        - in: formData
+          name: alt
+          type: string
+          description: alternative text
+        - in: formData
+          name: caption
+          type: string
+          description: image caption
+        - in: formData
+          name: type
+          type: string
+          description: mime type
+        - in: formData
+          name: size
+          type: number
+          description: image size in bytes
+        - in: formData
+          name: width
+          type: number
+          description: image width
+        - in: formData
+          name: height
+          type: number
+          description: image height
+        - in: formData
+          name: provider
+          type: string
+          description: image chapter
+        - in: formData
+          name: file
+          type: file
+          description: The file to upload.
+      responses:
+        200:
+          description: successful upload
+          schema:
+            $ref: "#/definitions/publicFile"
+        500:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+      tags:
+        - uploader
+    put:
+      security:
+        - x-token: [ ]
+      summary: Edit uploaded file.
+      consumes:
+        - multipart/form-data
+      parameters:
+        - in: formData
+          name: id
+          type: string
+          description: existing file id
+        - in: formData
+          name: name
+          type: string
+          description: image name
+        - in: formData
+          name: alt
+          type: string
+          description: alternative text
+        - in: formData
+          name: caption
+          type: string
+          description: image caption
+        - in: formData
+          name: type
+          type: string
+          description: mime type
+        - in: formData
+          name: size
+          type: number
+          description: image size in bytes
+        - in: formData
+          name: width
+          type: number
+          description: image width
+        - in: formData
+          name: height
+          type: number
+          description: image height
+        - in: formData
+          name: provider
+          type: string
+          description: image chapter
+        - in: formData
+          name: file
+          type: file
+          description: The file to upload.
+      responses:
+        '200':
+          description: An array of files
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/file'
+        '500':
+          description: "When some error occurs"
+          schema:
+            "$ref": "#/definitions/error"
+      tags:
+        - uploader
+  /uploader/files/{id}:
+    get:
+      security:
+        - x-token: [ ]
+      summary: get raw file version
+      parameters:
+        - type: integer
+          format: int64
+          name: id
+          in: path
+          required: true
+      produces:
+        - "application/json"
+      responses:
+        '200':
+          description: file
+          schema:
+            $ref: '#/definitions/file'
+        '500':
+          description: "When some error occurs"
+          schema:
+            "$ref": "#/definitions/error"
+      tags:
+        - uploader
+  /files/:file/:
+    get:
+      tags:
+        - public
+      summary: "Serve Static Image"
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: ok
+          schema:
+            $ref: "#/definitions/uploads"
+definitions:
+  principal:
+    type: string
+  ok:
+    properties:
+      message:
+        type: string
+  error:
+    type: object
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+      error:
+        type: boolean
+  ping:
+    properties:
+      ping:
+        description: Result of method execution. `pong` in case of success
+        enum:
+          - pong
+        type: string
+    required:
+      - ping
+    type: object
+  metrics:
+    type: object
+    additionalProperties:
+      type: string
+      format: number
+  uploads:
+    type: string
+  file:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      name:
+        type: string
+      thumb:
+        type: string
+      alt:
+        type: string
+      caption:
+        type: string
+      hash:
+        type: string
+      type:
+        type: string
+      ext:
+        type: string
+      size:
+        type: number
+      width:
+        type: integer
+        format: int64
+      height:
+        type: integer
+        format: int64
+      provider:
+        type: string
+      created_by_id:
+        type: integer
+        format: int64
+      updated_by_id:
+        type: integer
+        format: int64
+      created:
+        type: string
+        format: date
+      updated:
+        type: string
+        format: date
+      deleted:
+        type: string
+        format: date
+  publicFile:
+    properties:
+      id:
+        type: integer
+        format: bigInt
+      attributes:
+        type: object
+        properties:
+          name:
+            type: string
+          alt:
+            type: string
+          caption:
+            type: string
+          width:
+            type: integer
+          height:
+            type: integer
+          hash:
+            type: string
+          ext:
+            type: string
+          mime:
+            type: string
+          size:
+            type: number
+          url:
+            type: string
+          thumb:
+            type: string
+          provider:
+            type: string
+          hash:
+            type: string
+          type:
+            type: string
+          ext:
+            type: string
+          size:
+            type: number
+          created_by_id:
+            type: integer
+            format: int64
+          updated_by_id:
+            type: integer
+            format: int64
+          created:
+            type: string
+            format: date
+          updated:
+            type: string
+            format: date
+          deleted:
+            type: string
+            format: date
+          
+tags:
+- description: "API V1 request"
+  name: v1
+- description: "uploader routes"
+  name: uploader
