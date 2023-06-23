@@ -99,7 +99,9 @@ WORKDIR /usr/local/bin/
 
 # copy compiled binary and start the app
 COPY --from=go-builder .$GOPATH/service/bin/$APP_NAME-server ./$APP_NAME-server
-COPY --from=go-builder .$GOPATH/service/uploads ./uploads
+
+RUN mkdir -p /$GOPATH/service/uploads
+COPY --from=go-builder .$GOPATH/service/uploads /$GOPATH/service/uploads
 
 ENTRYPOINT ./$APP_NAME-server --port=$PORT --host="0.0.0.0"
 EXPOSE $PORT
