@@ -62,7 +62,7 @@ FROM alpine:latest
 FROM go-builder
 ENV GOPATH ${GOPATH}
 
-ARG APP_NAME=service
+ARG APP_NAME=uploader
 ARG PORT=1111
 ARG NODE_ENV=production
 ARG DOMAIN=localhost
