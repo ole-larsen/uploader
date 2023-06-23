@@ -96,12 +96,19 @@ func initSettings() settings {
 		Password: dbPassword,
 		Database: db,
 	}
-	pgsql := "postgres://" + dbUsername + ":" + dbPassword + "@" + dbHost + ":" + dbPort + "/" + db + "?sslmode=disable"
+	pgsql := "postgres://" + dbUsername + ":" + dbPassword + "@" + dbHost + ":" + dbPort + "/" + db
 	ss.PGSQL = pgsql
 
-	ss.UseHash = viper.GetBool("USE_HASH")
-	ss.UseDB = viper.GetBool("USE_DB")
+	ss.UseHash = false
+	if os.Getenv("USE_HASH") == "true" {
+		ss.UseHash = true
+	}
+	ss.UseDB = false
+	if os.Getenv("USE_DB") == "true" {
+		ss.UseDB = true
+	}
 
+	logger.Errorln(ss.PGSQL)
 	logger.Println("load settings done √")
 
 	return ss
