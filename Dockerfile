@@ -2,8 +2,8 @@
 # STEP 1 dapp binary using golang:alpine-latest
 FROM golang:alpine as go-builder
 
-ARG APP_NAME
-ARG PORT
+ARG APP_NAME=uploader
+ARG PORT=3013
 ARG NODE_ENV
 
 # PostgreSQL settings (default)
