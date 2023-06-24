@@ -24,9 +24,6 @@ GET /files: Retrieves a list of files.
 POST /files: Uploads a new file.
 PUT /files/{id}: Updates an existing file.
 
-PostgreSQL Table Structure
-The service uses a PostgreSQL database to store file metadata. The table structure is defined as follows:
-
 # Public Route
 The service includes a public route for retrieving and resizing files. The URL format for the public route is:
 ```
@@ -39,6 +36,8 @@ When a request is made to the public route with the specified size, hash, and ex
 
 
 # The files table stores the following information for each file:
+PostgreSQL Table Structure
+The service uses a PostgreSQL database to store file metadata. The table structure is defined as follows:
 ```
 id: Unique identifier of the file.
 name: Name of the file (must be unique).
