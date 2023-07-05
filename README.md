@@ -14,7 +14,7 @@ sudo docker build -t olelarsen/uploader \
   --build-arg DB_SQL_PORT=5432 \
   --build-arg DB_SQL_USERNAME=postgres \
   --build-arg DB_SQL_PASSWORD=postgres \
-  --build-arg DB_SQL_DATABASE=sheira \
+  --build-arg DB_SQL_DATABASE=files \
   --build-arg USE_DB=true .
 ```
 # Provider Routes
