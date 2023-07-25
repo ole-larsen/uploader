@@ -56,9 +56,9 @@ func initSettings() settings {
 	}
 	ss.Secret = secret
 
-	xToken, ok := viper.Get("X_TOKEN").(string)
+	xToken, ok := viper.Get("XTOKEN").(string)
 	if !ok {
-		xToken = os.Getenv("X_TOKEN")
+		xToken = os.Getenv("XTOKEN")
 	}
 	ss.XToken = xToken
 
