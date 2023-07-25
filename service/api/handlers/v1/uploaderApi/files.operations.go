@@ -1,6 +1,7 @@
 package uploaderApi
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -40,7 +41,25 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 
 	filename := strings.TrimSuffix(params.HTTPRequest.Form.Get("name"), ext)
 
+	// Here we start with a new hash.
+	h := sha256.New()
+
+	// `Write` expects bytes. If you have a string `s`,
+	// use `[]byte(s)` to coerce it to bytes.
+	h.Write([]byte(filename))
+
+	// This gets the finalized hash result as a byte
+	// slice. The argument to `Sum` can be used to append
+	// to an existing byte slice: it usually isn't needed.
+	bs := h.Sum(nil)
+
+	hash := fmt.Sprintf("%x\n", bs)
+
 	attributes["hash"] = params.HTTPRequest.Form.Get("hash")
+
+	if params.HTTPRequest.Form.Get("hash") == "" {
+		attributes["hash"] = hash
+	}
 	attributes["name"] = filename
 	attributes["alt"] = params.HTTPRequest.Form.Get("alt")
 	attributes["caption"] = params.HTTPRequest.Form.Get("caption")
@@ -52,9 +71,9 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 	attributes["provider"] = params.HTTPRequest.Form.Get("provider")
 	attributes["url"] = fmt.Sprintf("%s%s%s", repository.PublicDir, attributes["name"], attributes["ext"])
 
-	if settings.Settings.UseDB == true {
+	if settings.Settings.UseDB {
 		exists, err := a.service.Files.GetFileByName(filename)
-
+		a.service.Logger.Errorln(filename, exists, err)
 		if err != nil && err.Error() != "file not found" {
 			return nil, err
 		}
@@ -76,21 +95,21 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 		}
 		for _, f := range files {
 			if f.Name() == fmt.Sprintf("%s%s", filename, ext) {
+				a.service.Logger.Errorln(filename, "exists", ext)
 				return nil, fmt.Errorf("file exists")
 			}
 		}
 	}
 
-	if settings.Settings.UseDB == true {
+	if settings.Settings.UseDB {
 		if err = a.service.Files.Create(attributes); err != nil {
 			return nil, err
 		}
 	}
 
-	hash, _ := attributes["hash"].(string)
 	name, _ := attributes["name"].(string)
 
-	if settings.Settings.UseHash == true {
+	if settings.Settings.UseHash {
 		_, err = a.createFile(file, UPLOAD_DIR, hash, ext)
 		if err != nil {
 			return nil, err
@@ -101,7 +120,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 			return nil, err
 		}
 	}
-	if settings.Settings.UseDB == true {
+	if settings.Settings.UseDB {
 		return a.service.Files.GetPublicFileByName(filename)
 	} else {
 		return &models.PublicFile{
