@@ -73,7 +73,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 
 	if settings.Settings.UseDB {
 		exists, err := a.service.Files.GetFileByName(filename)
-		a.service.Logger.Errorln(filename, exists, err)
+
 		if err != nil && err.Error() != "file not found" {
 			return nil, err
 		}
@@ -95,7 +95,6 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 		}
 		for _, f := range files {
 			if f.Name() == fmt.Sprintf("%s%s", filename, ext) {
-				a.service.Logger.Errorln(filename, "exists", ext)
 				return nil, fmt.Errorf("file exists")
 			}
 		}
@@ -120,6 +119,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 			return nil, err
 		}
 	}
+
 	if settings.Settings.UseDB {
 		return a.service.Files.GetPublicFileByName(filename)
 	} else {

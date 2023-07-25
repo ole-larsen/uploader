@@ -45,6 +45,7 @@ func initSettings() settings {
 	// to get the underlying type of the key,
 	// we have to do the type assertion, we know the underlying value is string
 	app, ok := viper.Get("APP_NAME").(string)
+
 	if !ok {
 		app = os.Getenv("APP_NAME")
 	}
@@ -72,6 +73,7 @@ func initSettings() settings {
 	dbPort := viper.GetString("DB_SQL_PORT")
 	dbUsername := viper.GetString("DB_SQL_USERNAME")
 	dbPassword := viper.GetString("DB_SQL_PASSWORD")
+
 	db := viper.GetString("DB_SQL_DATABASE")
 
 	if dbHost == "" {
@@ -99,16 +101,22 @@ func initSettings() settings {
 	pgsql := "postgres://" + dbUsername + ":" + dbPassword + "@" + dbHost + ":" + dbPort + "/" + db
 	ss.PGSQL = pgsql
 
-	ss.UseHash = false
-	if os.Getenv("USE_HASH") == "true" {
-		ss.UseHash = true
-	}
-	ss.UseDB = false
-	if os.Getenv("USE_DB") == "true" {
-		ss.UseDB = true
+	useHash := viper.GetBool("USE_HASH")
+	if !useHash {
+		useHash = os.Getenv("USE_HASH") == "true"
 	}
 
-	logger.Errorln(ss.PGSQL)
+	ss.UseHash = useHash
+
+	useDb := viper.GetBool("USE_DB")
+	if !useDb {
+		useDb = os.Getenv("USE_DB") == "true"
+	}
+
+	ss.UseDB = useDb
+
+	logger.Infoln(ss.UseDB, ss.UseHash)
+	logger.Infoln(ss.PGSQL)
 	logger.Println("load settings done √")
 
 	return ss
