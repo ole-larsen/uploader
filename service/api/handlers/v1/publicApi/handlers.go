@@ -1,6 +1,7 @@
 package publicApi
 
 import (
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -10,9 +11,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
+	"github.com/chai2010/webp"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/nfnt/resize"
@@ -47,53 +48,69 @@ func (a *API) GetMetrics(params instruments.GetMetricsParams) middleware.Respond
 
 func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responder {
 	return middleware.ResponderFunc(func(w http.ResponseWriter, p runtime.Producer) {
-		path := strings.Split(params.HTTPRequest.URL.RequestURI(), "/")
+		path := strings.Split(params.HTTPRequest.URL.Path, "/")
+		dir := strings.Replace(strings.Join(path[:len(path)-1], "/"), "/api/v1/files", uploaderApi.UPLOAD_DIR, 1)
 
 		encodedFilename := path[len(path)-1]
 
 		filename, err := url.QueryUnescape(encodedFilename)
 		if err != nil {
-			a.service.Logger.Errorln(err)
+			a.internalError(w, err)
+			return
 		}
-		dimensions := strings.Split(filename, ":")[0]
-		a.service.Logger.Infoln("try to serve", path, filename, dimensions, filename != dimensions)
+		ext := a.extractExt(filename)
+		name := a.extractName(filename)
 
-		// if filename == dimensions means there are no dimension sizes
+		if params.Format != nil && *params.Format != "auto" {
+			ext = *params.Format
+		}
 
-		if filename != dimensions {
-			// create folder dimensions
-			if _, err = os.Stat(uploaderApi.UPLOAD_DIR + "/" + dimensions); os.IsNotExist(err) {
-				err = os.MkdirAll(uploaderApi.UPLOAD_DIR+"/"+dimensions, os.ModePerm)
+		// create folder dimensions
+		if params.W != nil {
+			sWidth := fmt.Sprintf("%d", int(*params.W))
+			if _, err = os.Stat(dir + "/" + sWidth); os.IsNotExist(err) {
+				err = os.MkdirAll(dir+"/"+sWidth, os.ModePerm)
 				if err != nil {
-					a.service.Logger.Errorln(err)
-				}
-			}
-			files, err := ioutil.ReadDir(uploaderApi.UPLOAD_DIR + "/" + dimensions)
-			if err != nil {
-				a.service.Logger.Errorln(err)
-			}
-
-			filename = strings.Split(filename, ":")[1]
-
-			for _, f := range files {
-				if f.Name() == fmt.Sprintf("%s", filename) {
-					a.serveFile(w, uploaderApi.UPLOAD_DIR+"/"+dimensions, filename)
+					a.internalError(w, err)
 					return
 				}
 			}
-		}
-		if filename == dimensions {
-			a.service.Logger.Infoln("serve file without resize")
-			a.serveFile(w, uploaderApi.UPLOAD_DIR, filename)
-			return
+			files, err := ioutil.ReadDir(dir + "/" + sWidth)
+			if err != nil {
+				a.internalError(w, err)
+				return
+			}
+			if len(files) > 0 {
+				for _, f := range files {
+					if f.Name() == filename {
+						a.serveFile(w, dir+"/"+sWidth, name+"."+ext)
+						return
+					}
+				}
+			}
 		}
 
-		// resize picture and put it to folder
-		a.service.Logger.Infoln("resize and create file", filename)
-		// Create a new file in the uploads directory
-		input, err := os.Open(uploaderApi.UPLOAD_DIR + "/" + filename)
+		if params.W == nil {
+			files, err := ioutil.ReadDir(dir)
+			if err != nil {
+				a.internalError(w, err)
+				return
+			}
+			if len(files) > 0 {
+				for _, f := range files {
+					if f.Name() == name+"."+ext {
+						a.serveFile(w, dir, name+"."+ext)
+						return
+					}
+				}
+			}
+		}
+
+		// open source file
+		input, err := os.Open(dir + "/" + filename)
 		if err != nil {
-			a.service.Logger.Errorln(err)
+			a.internalError(w, err)
+			return
 		}
 
 		defer func(input *os.File) {
@@ -103,57 +120,170 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 			}
 		}(input)
 
-		fileParts := strings.Split(input.Name(), ".")
-		extension := fileParts[len(fileParts)-1]
+		// decode source file
+		src, _, err := image.Decode(input)
+		if err != nil {
+			a.internalError(w, err)
+			return
+		}
+		bounds := src.Bounds()
 
-		switch extension {
+		sourceWidth := bounds.Dx()
+		sourceHeight := bounds.Dy()
+
+		width := float64(sourceWidth)
+		height := float64(sourceHeight)
+
+		coef := height / width
+
+		if params.W != nil {
+			width = *params.W
+			height = coef * width
+		}
+
+		dpr := float64(1)
+
+		if params.Dpr != nil {
+			dpr = *params.Dpr
+			width = width * dpr
+			height = height * dpr
+		}
+
+		switch ext {
+		case "webp":
+			if params.W == nil {
+				err = a.decodeBaseWEBP(src, dir, name+".webp")
+				if err != nil {
+					a.internalError(w, err)
+				} else {
+					a.serveFile(w, dir, name+".webp")
+				}
+			}
+			if params.W != nil {
+				err = a.decodeWEBP(src, dir, name+".webp", int(width), int(height))
+				if err != nil {
+					a.internalError(w, err)
+				} else {
+					a.serveFile(w, fmt.Sprintf("%s/%d", dir, int(width)), name+".webp")
+				}
+			}
 		case "png":
-			err = a.decodePNG(input, filename, dimensions)
-			if err != nil {
-				a.service.Logger.Errorln(err)
-			} else {
-				a.serveFile(w, uploaderApi.UPLOAD_DIR+"/"+dimensions, filename)
+			if params.W == nil {
+				err = a.decodeBasePNG(src, dir, name+".png")
+				if err != nil {
+					a.internalError(w, err)
+				} else {
+					a.serveFile(w, dir, name+".png")
+				}
+
 			}
-			break
+			if params.W != nil {
+				err = a.decodePNG(src, dir, name+".png", int(width), int(height))
+				if err != nil {
+					a.internalError(w, err)
+				} else {
+					a.serveFile(w, dir, name+".png")
+				}
+			}
 		case "jpg":
-			err = a.decodeJPG(input, filename, dimensions)
-			if err != nil {
-				a.service.Logger.Errorln(err)
-			} else {
-				a.serveFile(w, uploaderApi.UPLOAD_DIR+"/"+dimensions, filename)
+			if params.W == nil {
+				err = a.decodeBaseJPG(src, dir, name+".jpg")
+				if err != nil {
+					a.internalError(w, err)
+				} else {
+					a.serveFile(w, dir, name+".jpg")
+				}
 			}
-			break
+			if params.W != nil {
+				err = a.decodeJPG(src, dir, name+".jpg", int(width), int(height))
+				if err != nil {
+					a.internalError(w, err)
+				} else {
+					a.serveFile(w, dir, name+".jpg")
+				}
+			}
 		case "pdf":
 			a.serveFile(w, uploaderApi.UPLOAD_DIR, filename)
-			break
 		default:
-			a.service.Logger.Fatalln(extension)
-			break
+			a.service.Logger.Fatalln(name, ext)
 		}
 	})
 }
 
-func (a *API) decodePNG(input *os.File, filename string, dimensions string) error {
-	width, err := strconv.Atoi(strings.Split(dimensions, "x")[0])
-	if err != nil {
-		return err
-	}
-	height, err := strconv.Atoi(strings.Split(dimensions, "x")[1])
+func (a *API) extractName(filename string) string {
+	parts := strings.Split(filename, ".")
+	return strings.Join(parts[:len(parts)-1], "/")
+}
+
+func (a *API) extractExt(filename string) string {
+	parts := strings.Split(filename, ".")
+	return parts[len(parts)-1]
+}
+
+func (a *API) decodeBaseWEBP(src image.Image, dir string, filename string) error {
+	dst, err := os.Create(fmt.Sprintf("%s/%s", dir, filename))
 	if err != nil {
 		return err
 	}
 
-	src, err := png.Decode(input)
-	if err != nil {
-		return err
-	}
+	defer func(dst *os.File) {
+		err = dst.Close()
+		if err != nil {
+			a.service.Logger.Errorln(err)
+		}
+	}(dst)
+
+	// Encode the image in WebP format
+	return webp.Encode(dst, src, nil)
+}
+
+func (a *API) decodeWEBP(src image.Image, dir string, filename string, width int, height int) error {
 	// Set the expected size that you want:
 	resized := image.NewRGBA(image.Rect(0, 0, width, height))
 
 	// Resize:
-	draw.NearestNeighbor.Scale(resized, resized.Rect, src, src.Bounds(), draw.Over, nil)
+	draw.NearestNeighbor.Scale(resized, resized.Rect, src, src.Bounds(), draw.Over, &draw.Options{})
 
-	dst, err := os.Create(fmt.Sprintf("%s/%s", uploaderApi.UPLOAD_DIR+"/"+dimensions, filename))
+	dst, err := os.Create(fmt.Sprintf("%s/%d/%s", dir, width, filename))
+	if err != nil {
+		return err
+	}
+
+	defer func(dst *os.File) {
+		err = dst.Close()
+		if err != nil {
+			a.service.Logger.Errorln(err)
+		}
+	}(dst)
+
+	// Encode the image in WebP format
+	return webp.Encode(dst, resized, nil)
+}
+
+func (a *API) decodeBasePNG(src image.Image, dir string, filename string) error {
+	dst, err := os.Create(fmt.Sprintf("%s/%s", dir, filename))
+	if err != nil {
+		return err
+	}
+
+	defer func(dst *os.File) {
+		err = dst.Close()
+		if err != nil {
+			a.service.Logger.Errorln(err)
+		}
+	}(dst)
+
+	return png.Encode(dst, src)
+}
+
+func (a *API) decodePNG(src image.Image, dir string, filename string, width int, height int) error {
+	// Set the expected size that you want:
+	resized := image.NewRGBA(image.Rect(0, 0, width, height))
+
+	// Resize:
+	draw.NearestNeighbor.Scale(resized, resized.Rect, src, src.Bounds(), draw.Over, &draw.Options{})
+
+	dst, err := os.Create(fmt.Sprintf("%s/%d/%s", dir, width, filename))
 	if err != nil {
 		return err
 	}
@@ -168,24 +298,26 @@ func (a *API) decodePNG(input *os.File, filename string, dimensions string) erro
 	return png.Encode(dst, resized)
 }
 
-func (a *API) decodeJPG(input *os.File, filename string, dimensions string) error {
-	width, err := strconv.Atoi(strings.Split(dimensions, "x")[0])
-	if err != nil {
-		return err
-	}
-	height, err := strconv.Atoi(strings.Split(dimensions, "x")[1])
+func (a *API) decodeBaseJPG(src image.Image, dir string, filename string) error {
+	dst, err := os.Create(fmt.Sprintf("%s/%s", dir, filename))
 	if err != nil {
 		return err
 	}
 
-	src, _, err := image.Decode(input)
-	if err != nil {
-		return err
-	}
+	defer func(dst *os.File) {
+		err = dst.Close()
+		if err != nil {
+			a.service.Logger.Errorln(err)
+		}
+	}(dst)
 
+	return jpeg.Encode(dst, src, nil)
+}
+
+func (a *API) decodeJPG(src image.Image, dir string, filename string, width int, height int) error {
 	resized := resize.Resize(uint(width), uint(height), src, resize.Lanczos3)
 
-	dst, err := os.Create(fmt.Sprintf("%s/%s", uploaderApi.UPLOAD_DIR+"/"+dimensions, filename))
+	dst, err := os.Create(fmt.Sprintf("%s/%d/%s", dir, width, filename))
 	if err != nil {
 		return err
 	}
@@ -208,20 +340,38 @@ func (a *API) serveFile(w http.ResponseWriter, path string, filename string) {
 	}
 
 	ext := strings.Replace(filepath.Ext(filename), ".", "", 1)
-	a.service.Logger.Infoln("serve", ext)
-	w.Header().Set("Content-Type", fmt.Sprintf("image/%s", ext))
+
+	a.service.Logger.Infoln("serve", filename, ext)
+
+	contentType := fmt.Sprintf("image/%s", ext)
 
 	if ext == "svg" {
-		w.Header().Set("Content-Type", fmt.Sprintf("image/%s+xml", ext))
+		contentType = fmt.Sprintf("image/%s+xml", ext)
 	}
 
 	if ext == "jpeg" {
-		w.Header().Set("Content-Type", fmt.Sprintf("image/%s", "jpg"))
+		contentType = fmt.Sprintf("image/%s", "jpg")
 	}
 
 	if ext == "pdf" {
-		w.Header().Set("Content-type", "application/pdf")
+		contentType = "application/pdf"
 	}
 
+	if ext == "webp" {
+		contentType = fmt.Sprintf("image/%s", ext)
+	}
+	w.Header().Set("Content-Type", contentType)
 	w.Write(buf)
+}
+
+func (a *API) internalError(w http.ResponseWriter, err error) {
+	a.service.Logger.Errorln(err)
+	code := int64(http.StatusInternalServerError)
+	internalError, _ := json.Marshal(models.Error{
+		Code:    code,
+		Error:   true,
+		Message: err.Error(),
+	})
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Write(internalError)
 }

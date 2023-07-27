@@ -3,6 +3,7 @@ module github.com/ole-larsen/uploader
 go 1.20
 
 require (
+	github.com/chai2010/webp v1.1.1
 	github.com/go-openapi/errors v0.20.4
 	github.com/go-openapi/loads v0.21.2
 	github.com/go-openapi/runtime v0.26.0

@@ -55,3 +55,48 @@ func (o *GetFilesFileOK) WriteResponse(rw http.ResponseWriter, producer runtime.
 		panic(err) // let the recovery middleware deal with this
 	}
 }
+
+// GetFilesFileInternalServerErrorCode is the HTTP code returned for type GetFilesFileInternalServerError
+const GetFilesFileInternalServerErrorCode int = 500
+
+/*
+GetFilesFileInternalServerError generic error response
+
+swagger:response getFilesFileInternalServerError
+*/
+type GetFilesFileInternalServerError struct {
+
+	/*
+	  In: Body
+	*/
+	Payload *models.Error `json:"body,omitempty"`
+}
+
+// NewGetFilesFileInternalServerError creates GetFilesFileInternalServerError with default headers values
+func NewGetFilesFileInternalServerError() *GetFilesFileInternalServerError {
+
+	return &GetFilesFileInternalServerError{}
+}
+
+// WithPayload adds the payload to the get files file internal server error response
+func (o *GetFilesFileInternalServerError) WithPayload(payload *models.Error) *GetFilesFileInternalServerError {
+	o.Payload = payload
+	return o
+}
+
+// SetPayload sets the payload to the get files file internal server error response
+func (o *GetFilesFileInternalServerError) SetPayload(payload *models.Error) {
+	o.Payload = payload
+}
+
+// WriteResponse to the client
+func (o *GetFilesFileInternalServerError) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+
+	rw.WriteHeader(500)
+	if o.Payload != nil {
+		payload := o.Payload
+		if err := producer.Produce(rw, payload); err != nil {
+			panic(err) // let the recovery middleware deal with this
+		}
+	}
+}

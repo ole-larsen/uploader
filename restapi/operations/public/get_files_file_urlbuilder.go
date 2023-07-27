@@ -9,11 +9,19 @@ import (
 	"errors"
 	"net/url"
 	golangswaggerpaths "path"
+
+	"github.com/go-openapi/swag"
 )
 
 // GetFilesFileURL generates an URL for the get files file operation
 type GetFilesFileURL struct {
+	Dpr    *float64
+	Format *string
+	W      *float64
+
 	_basePath string
+	// avoid unkeyed usage
+	_ struct{}
 }
 
 // WithBasePath sets the base path for this url builder, only required when it's different from the
@@ -42,6 +50,34 @@ func (o *GetFilesFileURL) Build() (*url.URL, error) {
 		_basePath = "/api/v1"
 	}
 	_result.Path = golangswaggerpaths.Join(_basePath, _path)
+
+	qs := make(url.Values)
+
+	var dprQ string
+	if o.Dpr != nil {
+		dprQ = swag.FormatFloat64(*o.Dpr)
+	}
+	if dprQ != "" {
+		qs.Set("dpr", dprQ)
+	}
+
+	var formatQ string
+	if o.Format != nil {
+		formatQ = *o.Format
+	}
+	if formatQ != "" {
+		qs.Set("format", formatQ)
+	}
+
+	var wQ string
+	if o.W != nil {
+		wQ = swag.FormatFloat64(*o.W)
+	}
+	if wQ != "" {
+		qs.Set("w", wQ)
+	}
+
+	_result.RawQuery = qs.Encode()
 
 	return &_result, nil
 }

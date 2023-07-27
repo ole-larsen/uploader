@@ -38,11 +38,34 @@ func init() {
           "public"
         ],
         "summary": "Serve Static Image",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "format",
+            "in": "query"
+          },
+          {
+            "type": "number",
+            "name": "w",
+            "in": "query"
+          },
+          {
+            "type": "number",
+            "name": "dpr",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "ok",
             "schema": {
               "$ref": "#/definitions/uploads"
+            }
+          },
+          "500": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
             }
           }
         }
@@ -593,11 +616,34 @@ func init() {
           "public"
         ],
         "summary": "Serve Static Image",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "format",
+            "in": "query"
+          },
+          {
+            "type": "number",
+            "name": "w",
+            "in": "query"
+          },
+          {
+            "type": "number",
+            "name": "dpr",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "ok",
             "schema": {
               "$ref": "#/definitions/uploads"
+            }
+          },
+          "500": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
             }
           }
         }

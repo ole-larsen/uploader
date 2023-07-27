@@ -9,7 +9,10 @@ import (
 	"net/http"
 
 	"github.com/go-openapi/errors"
+	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
+	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
 )
 
 // NewGetFilesFileParams creates a new GetFilesFileParams object
@@ -28,6 +31,19 @@ type GetFilesFileParams struct {
 
 	// HTTP Request Object
 	HTTPRequest *http.Request `json:"-"`
+
+	/*
+	  In: query
+	*/
+	Dpr *float64
+	/*
+	  In: query
+	*/
+	Format *string
+	/*
+	  In: query
+	*/
+	W *float64
 }
 
 // BindRequest both binds and validates a request, it assumes that complex things implement a Validatable(strfmt.Registry) error interface
@@ -39,8 +55,88 @@ func (o *GetFilesFileParams) BindRequest(r *http.Request, route *middleware.Matc
 
 	o.HTTPRequest = r
 
+	qs := runtime.Values(r.URL.Query())
+
+	qDpr, qhkDpr, _ := qs.GetOK("dpr")
+	if err := o.bindDpr(qDpr, qhkDpr, route.Formats); err != nil {
+		res = append(res, err)
+	}
+
+	qFormat, qhkFormat, _ := qs.GetOK("format")
+	if err := o.bindFormat(qFormat, qhkFormat, route.Formats); err != nil {
+		res = append(res, err)
+	}
+
+	qW, qhkW, _ := qs.GetOK("w")
+	if err := o.bindW(qW, qhkW, route.Formats); err != nil {
+		res = append(res, err)
+	}
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+// bindDpr binds and validates parameter Dpr from query.
+func (o *GetFilesFileParams) bindDpr(rawData []string, hasKey bool, formats strfmt.Registry) error {
+	var raw string
+	if len(rawData) > 0 {
+		raw = rawData[len(rawData)-1]
+	}
+
+	// Required: false
+	// AllowEmptyValue: false
+
+	if raw == "" { // empty values pass all other validations
+		return nil
+	}
+
+	value, err := swag.ConvertFloat64(raw)
+	if err != nil {
+		return errors.InvalidType("dpr", "query", "float64", raw)
+	}
+	o.Dpr = &value
+
+	return nil
+}
+
+// bindFormat binds and validates parameter Format from query.
+func (o *GetFilesFileParams) bindFormat(rawData []string, hasKey bool, formats strfmt.Registry) error {
+	var raw string
+	if len(rawData) > 0 {
+		raw = rawData[len(rawData)-1]
+	}
+
+	// Required: false
+	// AllowEmptyValue: false
+
+	if raw == "" { // empty values pass all other validations
+		return nil
+	}
+	o.Format = &raw
+
+	return nil
+}
+
+// bindW binds and validates parameter W from query.
+func (o *GetFilesFileParams) bindW(rawData []string, hasKey bool, formats strfmt.Registry) error {
+	var raw string
+	if len(rawData) > 0 {
+		raw = rawData[len(rawData)-1]
+	}
+
+	// Required: false
+	// AllowEmptyValue: false
+
+	if raw == "" { // empty values pass all other validations
+		return nil
+	}
+
+	value, err := swag.ConvertFloat64(raw)
+	if err != nil {
+		return errors.InvalidType("w", "query", "float64", raw)
+	}
+	o.W = &value
+
 	return nil
 }
