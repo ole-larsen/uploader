@@ -70,7 +70,12 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 	attributes["height"] = params.HTTPRequest.Form.Get("height")
 	attributes["ext"] = ext
 	attributes["provider"] = params.HTTPRequest.Form.Get("provider")
+
 	attributes["url"] = fmt.Sprintf("%s%s%s", repository.PublicDir, attributes["name"], attributes["ext"])
+
+	if settings.Settings.UseHash {
+		attributes["url"] = fmt.Sprintf("%s%s%s", repository.PublicDir, hash, attributes["ext"])
+	}
 
 	if settings.Settings.UseDB {
 		exists, err := a.service.Files.GetFileByName(filename)
