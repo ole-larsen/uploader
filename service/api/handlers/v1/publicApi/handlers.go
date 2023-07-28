@@ -151,13 +151,11 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 
 		switch ext {
 		case "webp":
-			if params.W == nil {
-				err = a.decodeBaseWEBP(src, dir, name+".webp")
-				if err != nil {
-					a.internalError(w, err)
-				} else {
-					a.serveFile(w, dir, name+".webp")
-				}
+			err = a.decodeBaseWEBP(src, dir, name+".webp")
+			if err != nil {
+				a.internalError(w, err)
+			} else {
+				a.serveFile(w, dir, name+".webp")
 			}
 			if params.W != nil {
 				err = a.decodeWEBP(src, dir, name+".webp", int(width), int(height))
@@ -168,14 +166,11 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 				}
 			}
 		case "png":
-			if params.W == nil {
-				err = a.decodeBasePNG(src, dir, name+".png")
-				if err != nil {
-					a.internalError(w, err)
-				} else {
-					a.serveFile(w, dir, name+".png")
-				}
-
+			err = a.decodeBasePNG(src, dir, name+".png")
+			if err != nil {
+				a.internalError(w, err)
+			} else {
+				a.serveFile(w, dir, name+".png")
 			}
 			if params.W != nil {
 				err = a.decodePNG(src, dir, name+".png", int(width), int(height))
@@ -186,13 +181,11 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 				}
 			}
 		case "jpg":
-			if params.W == nil {
-				err = a.decodeBaseJPG(src, dir, name+".jpg")
-				if err != nil {
-					a.internalError(w, err)
-				} else {
-					a.serveFile(w, dir, name+".jpg")
-				}
+			err = a.decodeBaseJPG(src, dir, name+".jpg")
+			if err != nil {
+				a.internalError(w, err)
+			} else {
+				a.serveFile(w, dir, name+".jpg")
 			}
 			if params.W != nil {
 				err = a.decodeJPG(src, dir, name+".jpg", int(width), int(height))
@@ -246,6 +239,7 @@ func (a *API) decodeWEBP(src image.Image, dir string, filename string, width int
 
 	dst, err := os.Create(fmt.Sprintf("%s/%d/%s", dir, width, filename))
 	if err != nil {
+		a.service.Logger.Errorln(err)
 		return err
 	}
 
