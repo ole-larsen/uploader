@@ -54,7 +54,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 	// to an existing byte slice: it usually isn't needed.
 	bs := h.Sum(nil)
 
-	hash := fmt.Sprintf("%x\n", bs)
+	hash := fmt.Sprintf("%x", bs)
 
 	attributes["hash"] = params.HTTPRequest.Form.Get("hash")
 
@@ -135,6 +135,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 }
 
 func (a *API) createFile(file multipart.File, directory string, name string, ext string) (*os.File, error) {
+	a.service.Logger.Errorln(fmt.Sprintf("%s/%s%s", directory, name, ext))
 	dst, err := os.Create(fmt.Sprintf("%s/%s%s", directory, name, ext))
 	if err != nil {
 		return nil, err
