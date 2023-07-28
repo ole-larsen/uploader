@@ -35,7 +35,8 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 	attributes := make(map[string]interface{})
 
 	ext := filepath.Ext(fileHeader.Filename)
-	if params.HTTPRequest.Form.Get("ext") != "" {
+
+	if params.HTTPRequest.Form.Get("ext") != "" && params.HTTPRequest.Form.Get("ext") != "undefined" {
 		ext = params.HTTPRequest.Form.Get("ext")
 	}
 
