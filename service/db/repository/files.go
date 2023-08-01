@@ -24,7 +24,7 @@ type File struct {
 	Provider  *string     `db:"provider"`
 	Hash      string      `db:"hash"`
 	Ext       string      `db:"ext"`
-	Size      float64     `db:"size"`
+	Size      int64       `db:"size"`
 	Url       string      `db:"url"`
 	Formats   interface{} `db:"formats"`
 	Metadata  interface{} `db:"metadata"`

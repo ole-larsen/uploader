@@ -442,7 +442,8 @@ func init() {
           "type": "string"
         },
         "size": {
-          "type": "number"
+          "type": "integer",
+          "format": "int64"
         },
         "thumb": {
           "type": "string"
@@ -526,7 +527,8 @@ func init() {
               "type": "string"
             },
             "height": {
-              "type": "integer"
+              "type": "integer",
+              "format": "int64"
             },
             "mime": {
               "type": "string"
@@ -538,7 +540,8 @@ func init() {
               "type": "string"
             },
             "size": {
-              "type": "number"
+              "type": "integer",
+              "format": "int64"
             },
             "thumb": {
               "type": "string"
@@ -558,7 +561,8 @@ func init() {
               "type": "string"
             },
             "width": {
-              "type": "integer"
+              "type": "integer",
+              "format": "int64"
             }
           }
         },
@@ -992,7 +996,8 @@ func init() {
           "type": "string"
         },
         "height": {
-          "type": "integer"
+          "type": "integer",
+          "format": "int64"
         },
         "mime": {
           "type": "string"
@@ -1004,7 +1009,8 @@ func init() {
           "type": "string"
         },
         "size": {
-          "type": "number"
+          "type": "integer",
+          "format": "int64"
         },
         "thumb": {
           "type": "string"
@@ -1024,7 +1030,8 @@ func init() {
           "type": "string"
         },
         "width": {
-          "type": "integer"
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
@@ -1084,7 +1091,8 @@ func init() {
           "type": "string"
         },
         "size": {
-          "type": "number"
+          "type": "integer",
+          "format": "int64"
         },
         "thumb": {
           "type": "string"
@@ -1168,7 +1176,8 @@ func init() {
               "type": "string"
             },
             "height": {
-              "type": "integer"
+              "type": "integer",
+              "format": "int64"
             },
             "mime": {
               "type": "string"
@@ -1180,7 +1189,8 @@ func init() {
               "type": "string"
             },
             "size": {
-              "type": "number"
+              "type": "integer",
+              "format": "int64"
             },
             "thumb": {
               "type": "string"
@@ -1200,7 +1210,8 @@ func init() {
               "type": "string"
             },
             "width": {
-              "type": "integer"
+              "type": "integer",
+              "format": "int64"
             }
           }
         },

@@ -55,7 +55,7 @@ type File struct {
 	Provider string `json:"provider,omitempty"`
 
 	// size
-	Size float64 `json:"size,omitempty"`
+	Size int64 `json:"size,omitempty"`
 
 	// thumb
 	Thumb string `json:"thumb,omitempty"`

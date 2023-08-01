@@ -298,7 +298,8 @@ definitions:
       ext:
         type: string
       size:
-        type: number
+        type: integer
+        format: int64
       width:
         type: integer
         format: int64
@@ -338,8 +339,10 @@ definitions:
             type: string
           width:
             type: integer
+            format: int64
           height:
             type: integer
+            format: int64
           hash:
             type: string
           ext:
@@ -347,7 +350,8 @@ definitions:
           mime:
             type: string
           size:
-            type: number
+            type: integer
+            format: int64
           url:
             type: string
           thumb:
@@ -360,8 +364,6 @@ definitions:
             type: string
           ext:
             type: string
-          size:
-            type: number
           created_by_id:
             type: integer
             format: int64
