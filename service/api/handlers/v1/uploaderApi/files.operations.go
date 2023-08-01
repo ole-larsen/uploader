@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ole-larsen/uploader/models"
 	"github.com/ole-larsen/uploader/restapi/operations/uploader"
@@ -47,7 +48,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 
 	// `Write` expects bytes. If you have a string `s`,
 	// use `[]byte(s)` to coerce it to bytes.
-	h.Write([]byte(filename))
+	h.Write([]byte(filename + time.Now().Format(time.RFC850)))
 
 	// This gets the finalized hash result as a byte
 	// slice. The argument to `Sum` can be used to append
