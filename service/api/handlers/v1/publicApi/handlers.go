@@ -65,6 +65,8 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 			ext = *params.Format
 		}
 
+		a.service.Logger.Infoln(filename, name, ext)
+
 		// create folder dimensions
 		if params.W != nil {
 			sWidth := fmt.Sprintf("%d", int(*params.W))
@@ -257,6 +259,7 @@ func (a *API) decodeWEBP(src image.Image, dir string, filename string, width int
 func (a *API) decodeBasePNG(src image.Image, dir string, filename string) error {
 	dst, err := os.Create(fmt.Sprintf("%s/%s", dir, filename))
 	if err != nil {
+		a.service.Logger.Infoln(err)
 		return err
 	}
 
@@ -279,6 +282,7 @@ func (a *API) decodePNG(src image.Image, dir string, filename string, width int,
 
 	dst, err := os.Create(fmt.Sprintf("%s/%d/%s", dir, width, filename))
 	if err != nil {
+		a.service.Logger.Errorln(err)
 		return err
 	}
 
@@ -345,6 +349,10 @@ func (a *API) serveFile(w http.ResponseWriter, path string, filename string) {
 
 	if ext == "jpeg" {
 		contentType = fmt.Sprintf("image/%s", "jpg")
+	}
+
+	if ext == "png" {
+		contentType = fmt.Sprintf("image/%s", "png")
 	}
 
 	if ext == "pdf" {

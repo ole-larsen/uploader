@@ -37,6 +37,7 @@ func (a *API) GetFiles(params uploader.GetUploaderFilesParams, principal *models
 func (a *API) PostFiles(params uploader.PostUploaderFilesParams, principal *models.Principal) middleware.Responder {
 	payload, err := a.postFiles(params, principal)
 	if err != nil {
+		a.service.Logger.Errorln(err)
 		code := int64(http.StatusInternalServerError)
 		return uploader.NewPostUploaderFilesInternalServerError().WithPayload(&models.Error{
 			Code:    code,

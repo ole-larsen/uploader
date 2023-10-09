@@ -33,6 +33,8 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 		return nil, err
 	}
 
+	fmt.Println("#####################################")
+
 	attributes := make(map[string]interface{})
 
 	ext := filepath.Ext(fileHeader.Filename)
@@ -41,7 +43,13 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 		ext = params.HTTPRequest.Form.Get("ext")
 	}
 
-	filename := strings.TrimSuffix(params.HTTPRequest.Form.Get("name"), ext)
+	filenameWithExtension := params.HTTPRequest.Form.Get("name")
+
+	a.service.Logger.Infoln(fmt.Sprintf("upload filenameWithExtension: %s", filenameWithExtension))
+
+	filename := strings.TrimSuffix(filenameWithExtension, ext)
+
+	a.service.Logger.Infoln(fmt.Sprintf("filename without extension %s", filename))
 
 	// Here we start with a new hash.
 	h := sha256.New()
@@ -57,11 +65,14 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 
 	hash := fmt.Sprintf("%x", bs)
 
+	a.service.Logger.Infoln(fmt.Sprintf("created file hash %s", hash))
+
 	attributes["hash"] = params.HTTPRequest.Form.Get("hash")
 
 	if params.HTTPRequest.Form.Get("hash") == "" {
 		attributes["hash"] = hash
 	}
+
 	attributes["name"] = filename
 	attributes["alt"] = params.HTTPRequest.Form.Get("alt")
 	attributes["caption"] = params.HTTPRequest.Form.Get("caption")
@@ -78,14 +89,20 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 		attributes["url"] = fmt.Sprintf("%s%s%s", repository.PublicDir, hash, attributes["ext"])
 	}
 
+	a.service.Logger.Infoln(attributes)
+
+	fmt.Println("#####################################")
+
 	if settings.Settings.UseDB {
 		exists, err := a.service.Files.GetFileByName(filename)
 
 		if err != nil && err.Error() != "file not found" {
+			a.service.Logger.Errorln(err)
 			return nil, err
 		}
 
 		if exists != nil {
+			a.service.Logger.Errorln(err)
 			return nil, fmt.Errorf("file exists")
 		}
 	}
@@ -93,11 +110,13 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 	if _, err = os.Stat(UPLOAD_DIR); os.IsNotExist(err) {
 		err = os.MkdirAll(UPLOAD_DIR, os.ModePerm)
 		if err != nil {
+			a.service.Logger.Errorln(err)
 			return nil, err
 		}
 	} else {
 		files, err := ioutil.ReadDir(UPLOAD_DIR)
 		if err != nil {
+			a.service.Logger.Errorln(err)
 			return nil, err
 		}
 		for _, f := range files {
@@ -109,6 +128,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 
 	if settings.Settings.UseDB {
 		if err = a.service.Files.Create(attributes); err != nil {
+			a.service.Logger.Errorln(err)
 			return nil, err
 		}
 	}
@@ -118,11 +138,13 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 	if settings.Settings.UseHash {
 		_, err = a.createFile(file, UPLOAD_DIR, hash, ext)
 		if err != nil {
+			a.service.Logger.Errorln(err)
 			return nil, err
 		}
 	} else {
 		_, err = a.createFile(file, UPLOAD_DIR, name, ext)
 		if err != nil {
+			a.service.Logger.Errorln(err)
 			return nil, err
 		}
 	}
@@ -141,9 +163,11 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 }
 
 func (a *API) createFile(file multipart.File, directory string, name string, ext string) (*os.File, error) {
-	a.service.Logger.Errorln(fmt.Sprintf("%s/%s%s", directory, name, ext))
+	fmt.Println("******************* CREATE FILE *****************************************")
+	a.service.Logger.Infoln(fmt.Sprintf("%s/%s%s", directory, name, ext))
 	dst, err := os.Create(fmt.Sprintf("%s/%s%s", directory, name, ext))
 	if err != nil {
+		a.service.Logger.Errorln(err)
 		return nil, err
 	}
 
@@ -171,6 +195,7 @@ func (a *API) putFiles(params uploader.PutUploaderFilesParams, principal *models
 	}(file)
 
 	if err != nil {
+		a.service.Logger.Errorln(err)
 		return nil, err
 	}
 
@@ -184,8 +209,11 @@ func (a *API) putFiles(params uploader.PutUploaderFilesParams, principal *models
 	id, err := strconv.ParseInt(params.HTTPRequest.Form.Get("id"), 10, 64)
 
 	if err != nil {
+		a.service.Logger.Errorln(err)
 		return nil, err
 	}
+
+	a.service.Logger.Infoln(id, filename, ext)
 
 	attributes := make(map[string]interface{})
 	attributes["id"] = id
@@ -202,9 +230,12 @@ func (a *API) putFiles(params uploader.PutUploaderFilesParams, principal *models
 	attributes["updated_by_id"] = *principal
 	attributes["provider"] = params.HTTPRequest.Form.Get("provider")
 
+	a.service.Logger.Infoln(attributes)
+
 	exist, err := a.service.Files.GetFileByID(id)
 
 	if err != nil {
+		a.service.Logger.Errorln(err)
 		return nil, err
 	}
 
@@ -214,22 +245,26 @@ func (a *API) putFiles(params uploader.PutUploaderFilesParams, principal *models
 	existFilename, err := url.QueryUnescape(encodedFilename)
 	if err != nil {
 		a.service.Logger.Errorln(err)
+		return nil, err
 	}
 
 	err = os.Remove(fmt.Sprintf("%s/%s", UPLOAD_DIR, existFilename))
 	if err != nil {
 		a.service.Logger.Errorln(err)
+		return nil, err
 	}
 
 	err = os.Remove(fmt.Sprintf("%s/%s%s", UPLOAD_DIR, filename, ext))
 	if err != nil {
 		a.service.Logger.Errorln(err)
+		return nil, err
 	}
 
 	// Create a new file in the uploads directory
 	dst, err := os.Create(fmt.Sprintf("%s/%s%s", UPLOAD_DIR, filename, ext))
 
 	if err != nil {
+		a.service.Logger.Errorln(err)
 		return nil, err
 	}
 
@@ -243,6 +278,7 @@ func (a *API) putFiles(params uploader.PutUploaderFilesParams, principal *models
 	// Copy the uploaded file to the filesystem at the specified destination
 	_, err = io.Copy(dst, file)
 	if err != nil {
+		a.service.Logger.Errorln(err)
 		return nil, err
 	}
 	return a.service.Files.Update(attributes)
@@ -259,6 +295,7 @@ func (a *API) getFiles(params uploader.GetUploaderFilesParams, principal *models
 
 		file, err := a.service.Files.GetFileByName(strings.TrimSuffix(name, ext))
 		if err != nil {
+			a.service.Logger.Errorln(err)
 			return nil, err
 		}
 		return append(make([]*models.File, 0), file), nil
