@@ -49,6 +49,11 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 
 	filename := strings.TrimSuffix(filenameWithExtension, ext)
 
+	// modify filename
+	tag := time.Now().Format(time.RFC850)
+
+	filename = filename + tag
+
 	a.service.Logger.Infoln(fmt.Sprintf("filename without extension %s", filename))
 
 	// Here we start with a new hash.
@@ -56,7 +61,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 
 	// `Write` expects bytes. If you have a string `s`,
 	// use `[]byte(s)` to coerce it to bytes.
-	h.Write([]byte(filename + time.Now().Format(time.RFC850)))
+	h.Write([]byte(filename))
 
 	// This gets the finalized hash result as a byte
 	// slice. The argument to `Sum` can be used to append
@@ -102,7 +107,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 		}
 
 		if exists != nil {
-			a.service.Logger.Errorln(err)
+			a.service.Logger.Errorln(exists)
 			return nil, fmt.Errorf("file exists")
 		}
 	}
