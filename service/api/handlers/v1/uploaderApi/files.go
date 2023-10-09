@@ -11,6 +11,7 @@ import (
 func (a *API) GetFilesID(params uploader.GetUploaderFilesIDParams, principal *models.Principal) middleware.Responder {
 	payload, err := a.getFilesID(params, principal)
 	if err != nil {
+		a.service.Logger.Errorln(err)
 		code := int64(http.StatusInternalServerError)
 		return uploader.NewGetUploaderFilesInternalServerError().WithPayload(&models.Error{
 			Code:    code,
@@ -24,6 +25,7 @@ func (a *API) GetFilesID(params uploader.GetUploaderFilesIDParams, principal *mo
 func (a *API) GetFiles(params uploader.GetUploaderFilesParams, principal *models.Principal) middleware.Responder {
 	payload, err := a.getFiles(params, principal)
 	if err != nil {
+		a.service.Logger.Errorln(err)
 		code := int64(http.StatusInternalServerError)
 		return uploader.NewGetUploaderFilesInternalServerError().WithPayload(&models.Error{
 			Code:    code,
@@ -51,6 +53,7 @@ func (a *API) PostFiles(params uploader.PostUploaderFilesParams, principal *mode
 func (a *API) PutFiles(params uploader.PutUploaderFilesParams, principal *models.Principal) middleware.Responder {
 	payload, err := a.putFiles(params, principal)
 	if err != nil {
+		a.service.Logger.Errorln(err)
 		code := int64(http.StatusInternalServerError)
 		return uploader.NewGetUploaderFilesInternalServerError().WithPayload(&models.Error{
 			Code:    code,

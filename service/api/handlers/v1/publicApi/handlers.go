@@ -241,7 +241,6 @@ func (a *API) decodeWEBP(src image.Image, dir string, filename string, width int
 
 	dst, err := os.Create(fmt.Sprintf("%s/%d/%s", dir, width, filename))
 	if err != nil {
-		a.service.Logger.Errorln(err)
 		return err
 	}
 
@@ -259,7 +258,6 @@ func (a *API) decodeWEBP(src image.Image, dir string, filename string, width int
 func (a *API) decodeBasePNG(src image.Image, dir string, filename string) error {
 	dst, err := os.Create(fmt.Sprintf("%s/%s", dir, filename))
 	if err != nil {
-		a.service.Logger.Infoln(err)
 		return err
 	}
 
