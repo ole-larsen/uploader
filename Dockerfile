@@ -47,20 +47,18 @@ RUN apk add --update --no-cache make git gcc build-base curl jq
 
 #https://docs.docker.com/language/golang/build-images/
 
-WORKDIR $GOPATH/service
+WORKDIR $GOPATH/src
 
 COPY . .
 
-RUN go mod download && go mod tidy && \
-    go install cmd/$APP_NAME-server/main.go
-RUN go build -o bin/$APP_NAME-server ./cmd/$APP_NAME-server
+RUN echo $GOPATH
+
+RUN go mod download && go mod tidy
+
+RUN go build -o bin/uploader-server ./cmd/uploader-server
 
 # STEP 2 dapp executable binary
 FROM alpine:latest
-
-# get GOPATH variable
-FROM go-builder
-ENV GOPATH ${GOPATH}
 
 ARG APP_NAME
 ARG PORT
@@ -95,15 +93,15 @@ ENV DB_SQL_DATABASE=$DB_SQL_DATABASE
 ENV SESSION_SECRET=$SESSION_SECRET
 ENV X_TOKEN=$X_TOKEN
 
-# RUN echo $APP_NAME $PORT $NODE_ENV $DB_SQL_HOST $DB_SQL_PORT $DB_SQL_USERNAME $DB_SQL_PASSWORD $DB_SQL_DATABASE $SESSION_SECRET $X_TOKEN $USE_HASH $USE_DB
+ENV GOPATH=$GOPATH
 
+RUN echo $GOPATH
 WORKDIR /usr/local/bin/
 
 # copy compiled binary and start the app
-COPY --from=go-builder .$GOPATH/service/bin/$APP_NAME-server ./$APP_NAME-server
+COPY --from=go-builder /go/src/bin/uploader-server ./uploader-server
 
 RUN mkdir -p uploads
-#COPY --from=go-builder .$GOPATH/service/uploads /$GOPATH/service/uploads
 
 ENTRYPOINT ./$APP_NAME-server --port=$PORT --host="0.0.0.0"
 EXPOSE $PORT
