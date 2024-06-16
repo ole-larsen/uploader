@@ -23,6 +23,7 @@ func init() {
 				mime character varying(128),
 				size integer,
 				url character varying(255),
+				blur character varying(255),
 				preview_url character varying(255),
 				provider character varying(128),
 				provider_metadata jsonb,
