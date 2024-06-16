@@ -15,9 +15,7 @@
       </div>
       {{ file }}
       <div v-if="file.isUploaded" class="upload-preview">
-        
-import { onMounted } from 'vue';
-<img :src="file.url" v-if="file.isImage" class="file-image" alt="" />
+        <img :src="file.url" v-if="file.isImage" class="file-image" alt="" />
         <div v-if="!file.isImage" class="file-extention">
           {{ file.fileExtention }}
         </div>
@@ -36,6 +34,7 @@ import { onMounted } from 'vue';
 </template>
 
 <script>
+
 export default {
   name: 'FileUpload',
   props: {
@@ -131,7 +130,8 @@ export default {
     },
     load () {
       const token = process.env.VUE_APP_XTOKEN;
-  
+      console.log(token);
+      console.log(process.env);
       return fetch(`${process.env.VUE_APP_BACKEND_URL}/api/v1/uploader/files`, {
         method: 'GET', // or 'PUT'
         headers: {
@@ -149,7 +149,7 @@ export default {
       });
     },
     update(file) {
-      const token = import.meta.env.VITE_XTOKEN;
+      const token = import.meta.env.VUE_APP_XTOKEN;
       const formData = new FormData();
       formData.append("id", file.id);
       formData.append("name", file.name);
@@ -163,7 +163,7 @@ export default {
       formData.append("height", file.height);
       formData.append("provider", file.provider);
       formData.append("file", file.file);
-      let url = `${import.meta.env.VITE_BACKEND_URL}/api/v1/uploader/files`;
+      let url = `${import.meta.env.VUE_APP_BACKEND_URL}/api/v1/uploader/files`;
 
       return fetch(url, {
         method: 'PUT',

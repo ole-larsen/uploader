@@ -20,7 +20,7 @@ import FileUpload from './components/FileUpload.vue'
 export default {
   name: 'App',
   components: {
-    FileUpload
+   FileUpload
   },
   data() {
     return {
