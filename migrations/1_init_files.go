@@ -21,7 +21,7 @@ func init() {
 				hash character varying(128),
 				ext character varying(10),
 				mime character varying(128),
-				size numeric(10,2),
+				size integer,
 				url character varying(255),
 				preview_url character varying(255),
 				provider character varying(128),
