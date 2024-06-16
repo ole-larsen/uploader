@@ -162,6 +162,10 @@ paths:
           type: string
           description: mime type
         - in: formData
+          name: blur
+          type: string
+          description: blur  
+        - in: formData
           name: size
           type: number
           description: image size in bytes
@@ -308,6 +312,8 @@ definitions:
         format: int64
       provider:
         type: string
+      blur:
+        type: string  
       created_by_id:
         type: integer
         format: int64
@@ -354,6 +360,8 @@ definitions:
             format: int64
           url:
             type: string
+          blur:
+            type: string  
           thumb:
             type: string
           provider:

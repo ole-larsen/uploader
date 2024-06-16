@@ -22,7 +22,7 @@ type Ping struct {
 
 	// Result of method execution. `pong` in case of success
 	// Required: true
-	// Enum: [pong]
+	// Enum: ["pong"]
 	Ping *string `json:"ping"`
 }
 

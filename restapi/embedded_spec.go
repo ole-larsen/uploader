@@ -206,6 +206,12 @@ func init() {
             "in": "formData"
           },
           {
+            "type": "string",
+            "description": "blur",
+            "name": "blur",
+            "in": "formData"
+          },
+          {
             "type": "number",
             "description": "image size in bytes",
             "name": "size",
@@ -406,6 +412,9 @@ func init() {
         "alt": {
           "type": "string"
         },
+        "blur": {
+          "type": "string"
+        },
         "caption": {
           "type": "string"
         },
@@ -503,6 +512,9 @@ func init() {
           "type": "object",
           "properties": {
             "alt": {
+              "type": "string"
+            },
+            "blur": {
               "type": "string"
             },
             "caption": {
@@ -788,6 +800,12 @@ func init() {
             "in": "formData"
           },
           {
+            "type": "string",
+            "description": "blur",
+            "name": "blur",
+            "in": "formData"
+          },
+          {
             "type": "number",
             "description": "image size in bytes",
             "name": "size",
@@ -974,6 +992,9 @@ func init() {
         "alt": {
           "type": "string"
         },
+        "blur": {
+          "type": "string"
+        },
         "caption": {
           "type": "string"
         },
@@ -1053,6 +1074,9 @@ func init() {
       "type": "object",
       "properties": {
         "alt": {
+          "type": "string"
+        },
+        "blur": {
           "type": "string"
         },
         "caption": {
@@ -1152,6 +1176,9 @@ func init() {
           "type": "object",
           "properties": {
             "alt": {
+              "type": "string"
+            },
+            "blur": {
               "type": "string"
             },
             "caption": {

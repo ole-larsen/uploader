@@ -26,6 +26,7 @@ type File struct {
 	Ext       string      `db:"ext"`
 	Size      int64       `db:"size"`
 	Url       string      `db:"url"`
+	Blur      string      `db:"blur"`
 	Formats   interface{} `db:"formats"`
 	Metadata  interface{} `db:"metadata"`
 	Mime      string      `db:"mime"`
@@ -71,8 +72,8 @@ func (f FileRepo) Create(fileMap map[string]interface{}) error {
 	}
 
 	_, err := f.db.NamedExec(`
-		INSERT INTO files (name, alt, caption, hash, mime, ext, size, width, height, provider, url)
-		VALUES (:name, :alt, :caption, :hash, :mime, :ext, :size, :width, :height, :provider, :url)
+		INSERT INTO files (name, alt, caption, hash, mime, ext, size, width, height, provider, url, blur)
+		VALUES (:name, :alt, :caption, :hash, :mime, :ext, :size, :width, :height, :provider, :url, :blur)
 		ON CONFLICT DO NOTHING`, fileMap)
 	return err
 }
@@ -93,6 +94,7 @@ func (f FileRepo) Update(fileMap map[string]interface{}) ([]*models.File, error)
                 width=:width,
                 height=:height,
                 url=:url,
+				blur=:blur
                 provider=:provider WHERE id =:id`, fileMap)
 	if err != nil {
 		return nil, err
@@ -110,14 +112,14 @@ func (f FileRepo) GetFiles() ([]*models.File, error) {
 	)
 
 	rows, err := f.db.Queryx(
-		"SELECT id, name, alt, caption, hash, mime, ext, size, width, height, provider, url, created, updated, deleted from files;")
+		"SELECT id, name, alt, caption, hash, mime, ext, size, width, height, provider, url, blur, created, updated, deleted from files;")
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
 		var file File
 		err = rows.Scan(&file.ID, &file.Name, &file.Alt, &file.Caption, &file.Hash, &file.Mime, &file.Ext, &file.Size,
-			&file.Width, &file.Height, &file.Provider, &file.Url, &file.Created, &file.Updated, &file.Deleted)
+			&file.Width, &file.Height, &file.Provider, &file.Url, &file.Blur, &file.Created, &file.Updated, &file.Deleted)
 		if err != nil {
 			return nil, err
 		}
@@ -140,6 +142,7 @@ func (f FileRepo) GetFiles() ([]*models.File, error) {
 			Width:    file.Width,
 			Height:   file.Height,
 			Provider: provider,
+			Blur:     file.Blur,
 			Created:  file.Created,
 			Updated:  file.Updated,
 			Deleted:  file.Deleted,
@@ -155,10 +158,10 @@ func (f FileRepo) GetFileByName(name string) (*models.File, error) {
 		return nil, errDbNotInitialized
 	}
 	var file File
-	sqlStatement := `SELECT id, name, alt, caption, hash, mime, ext, size, width, height, provider, url, created, updated, deleted from files WHERE name=$1;`
+	sqlStatement := `SELECT id, name, alt, caption, hash, mime, ext, size, width, height, provider, url, blur, created, updated, deleted from files WHERE name=$1;`
 	row := f.db.QueryRow(sqlStatement, name)
 	err := row.Scan(&file.ID, &file.Name, &file.Alt, &file.Caption, &file.Hash, &file.Mime, &file.Ext, &file.Size,
-		&file.Width, &file.Height, &file.Provider, &file.Url, &file.Created, &file.Updated, &file.Deleted)
+		&file.Width, &file.Height, &file.Provider, &file.Url, &file.Blur, &file.Created, &file.Updated, &file.Deleted)
 	switch err {
 	case sql.ErrNoRows:
 		return nil, fmt.Errorf("file not found")
@@ -181,6 +184,7 @@ func (f FileRepo) GetFileByName(name string) (*models.File, error) {
 			Width:    file.Width,
 			Height:   file.Height,
 			Provider: provider,
+			Blur:     file.Blur,
 			Created:  file.Created,
 			Updated:  file.Updated,
 			Deleted:  file.Deleted,
@@ -195,10 +199,10 @@ func (f FileRepo) GetFileByID(id int64) (*models.File, error) {
 		return nil, errDbNotInitialized
 	}
 	var file File
-	sqlStatement := `SELECT id, name, alt, caption, hash, mime, ext, size, width, height, provider, url, created, updated, deleted from files WHERE id=$1;`
+	sqlStatement := `SELECT id, name, alt, caption, hash, mime, ext, size, width, height, provider, url, blur, created, updated, deleted from files WHERE id=$1;`
 	row := f.db.QueryRow(sqlStatement, id)
 	err := row.Scan(&file.ID, &file.Name, &file.Alt, &file.Caption, &file.Hash, &file.Mime, &file.Ext, &file.Size,
-		&file.Width, &file.Height, &file.Provider, &file.Url, &file.Created, &file.Updated, &file.Deleted)
+		&file.Width, &file.Height, &file.Provider, &file.Url, &file.Blur, &file.Created, &file.Updated, &file.Deleted)
 	switch err {
 	case sql.ErrNoRows:
 		return nil, fmt.Errorf("file not found")
@@ -221,6 +225,7 @@ func (f FileRepo) GetFileByID(id int64) (*models.File, error) {
 			Width:    file.Width,
 			Height:   file.Height,
 			Provider: provider,
+			Blur:     file.Blur,
 			Created:  file.Created,
 			Updated:  file.Updated,
 			Deleted:  file.Deleted,
@@ -240,7 +245,7 @@ func (f FileRepo) GetPublicFilesByProvider(_provider string) ([]*models.PublicFi
 	)
 
 	rows, err := f.db.Queryx(
-		`SELECT id, name, alt, caption, hash, mime, ext, size, width, height, provider, url,
+		`SELECT id, name, alt, caption, hash, mime, ext, size, width, height, provider, url, blur,
    created, updated, deleted from files where provider=$1;`, _provider)
 
 	if err != nil {
@@ -250,7 +255,7 @@ func (f FileRepo) GetPublicFilesByProvider(_provider string) ([]*models.PublicFi
 	for rows.Next() {
 		var file File
 		err = rows.Scan(&file.ID, &file.Name, &file.Alt, &file.Caption, &file.Hash, &file.Mime, &file.Ext, &file.Size,
-			&file.Width, &file.Height, &file.Provider, &file.Url, &file.Created, &file.Updated, &file.Deleted)
+			&file.Width, &file.Height, &file.Provider, &file.Url, &file.Blur, &file.Created, &file.Updated, &file.Deleted)
 		if err != nil {
 			return nil, err
 		}
@@ -273,6 +278,7 @@ func (f FileRepo) GetPublicFilesByProvider(_provider string) ([]*models.PublicFi
 				Provider: provider,
 				Size:     file.Size,
 				URL:      file.Url,
+				Blur:     file.Blur,
 				Width:    file.Width,
 				Created:  file.Created,
 				Updated:  file.Updated,
@@ -303,6 +309,7 @@ func (f FileRepo) GetPublicFileByName(name string) (*models.PublicFile, error) {
 			Provider: file.Provider,
 			Size:     file.Size,
 			URL:      file.Thumb,
+			Blur:     file.Blur,
 			Width:    file.Width,
 			Created:  file.Created,
 			Updated:  file.Updated,
@@ -329,6 +336,7 @@ func (f FileRepo) GetPublicFileByID(id int64) (*models.PublicFile, error) {
 			Provider: file.Provider,
 			Size:     file.Size,
 			URL:      file.Thumb,
+			Blur:     file.Blur,
 			Width:    file.Width,
 			Created:  file.Created,
 			Updated:  file.Updated,

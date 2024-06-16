@@ -45,6 +45,10 @@ type PutUploaderFilesParams struct {
 	  In: formData
 	*/
 	Alt *string
+	/*blur
+	  In: formData
+	*/
+	Blur *string
 	/*image caption
 	  In: formData
 	*/
@@ -103,6 +107,11 @@ func (o *PutUploaderFilesParams) BindRequest(r *http.Request, route *middleware.
 
 	fdAlt, fdhkAlt, _ := fds.GetOK("alt")
 	if err := o.bindAlt(fdAlt, fdhkAlt, route.Formats); err != nil {
+		res = append(res, err)
+	}
+
+	fdBlur, fdhkBlur, _ := fds.GetOK("blur")
+	if err := o.bindBlur(fdBlur, fdhkBlur, route.Formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -175,6 +184,23 @@ func (o *PutUploaderFilesParams) bindAlt(rawData []string, hasKey bool, formats 
 		return nil
 	}
 	o.Alt = &raw
+
+	return nil
+}
+
+// bindBlur binds and validates parameter Blur from formData.
+func (o *PutUploaderFilesParams) bindBlur(rawData []string, hasKey bool, formats strfmt.Registry) error {
+	var raw string
+	if len(rawData) > 0 {
+		raw = rawData[len(rawData)-1]
+	}
+
+	// Required: false
+
+	if raw == "" { // empty values pass all other validations
+		return nil
+	}
+	o.Blur = &raw
 
 	return nil
 }

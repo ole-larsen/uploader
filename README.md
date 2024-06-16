@@ -1,5 +1,8 @@
 This is a Go service built using goswagger.io for handling file uploads. The service allows files to be uploaded through secured provider routes and provides a public route for retrieving files. The service uploads files to the uploads directory and stores file metadata in a PostgreSQL database.
 
+```
+swagger generate server -A uploader -f ./schema/swagger.yml -P models.Principal
+```
 # Docker Build Command
 To build the Docker image for the service, run the following command:
 ```

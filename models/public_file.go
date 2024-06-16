@@ -120,6 +120,9 @@ type PublicFileAttributes struct {
 	// alt
 	Alt string `json:"alt,omitempty"`
 
+	// blur
+	Blur string `json:"blur,omitempty"`
+
 	// caption
 	Caption string `json:"caption,omitempty"`
 

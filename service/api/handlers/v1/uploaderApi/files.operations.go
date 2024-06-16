@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/url"
 	"os"
@@ -79,6 +78,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 	attributes["height"] = params.HTTPRequest.Form.Get("height")
 	attributes["ext"] = ext
 	attributes["provider"] = params.HTTPRequest.Form.Get("provider")
+	attributes["blur"] = params.HTTPRequest.Form.Get("blur")
 
 	attributes["url"] = fmt.Sprintf("%s%s%s", repository.PublicDir, attributes["name"], attributes["ext"])
 
@@ -104,7 +104,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 			return nil, err
 		}
 	} else {
-		files, err := ioutil.ReadDir(UPLOAD_DIR)
+		files, err := os.ReadDir(UPLOAD_DIR)
 		if err != nil {
 			return nil, err
 		}
@@ -209,7 +209,7 @@ func (a *API) putFiles(params uploader.PutUploaderFilesParams, principal *models
 	attributes["created_by_id"] = *principal
 	attributes["updated_by_id"] = *principal
 	attributes["provider"] = params.HTTPRequest.Form.Get("provider")
-
+	attributes["blur"] = params.HTTPRequest.Form.Get("blur")
 	exist, err := a.service.Files.GetFileByID(id)
 
 	if err != nil {
