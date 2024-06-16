@@ -6,7 +6,7 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -77,7 +77,7 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 					return
 				}
 			}
-			files, err := ioutil.ReadDir(dir + "/" + sWidth)
+			files, err := io.ReadDir(dir + "/" + sWidth)
 			if err != nil {
 				a.internalError(w, err)
 				return
@@ -93,7 +93,7 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 		}
 
 		if params.W == nil {
-			files, err := ioutil.ReadDir(dir)
+			files, err := io.ReadDir(dir)
 			if err != nil {
 				a.internalError(w, err)
 				return
@@ -329,7 +329,7 @@ func (a *API) decodeJPG(src image.Image, dir string, filename string, width int,
 }
 
 func (a *API) serveFile(w http.ResponseWriter, path string, filename string) {
-	buf, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", path, filename))
+	buf, err := io.ReadFile(fmt.Sprintf("%s/%s", path, filename))
 
 	if err != nil {
 		a.service.Logger.Errorln(err)

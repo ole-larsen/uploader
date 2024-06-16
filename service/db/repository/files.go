@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"math"
 
 	"github.com/go-openapi/strfmt"
 	"github.com/hashicorp/go-multierror"
@@ -25,7 +24,7 @@ type File struct {
 	Provider  *string     `db:"provider"`
 	Hash      string      `db:"hash"`
 	Ext       string      `db:"ext"`
-	Size      float64     `db:"size"`
+	Size      int64       `db:"size"`
 	Url       string      `db:"url"`
 	Formats   interface{} `db:"formats"`
 	Metadata  interface{} `db:"metadata"`
@@ -127,7 +126,6 @@ func (f FileRepo) GetFiles() ([]*models.File, error) {
 		if file.Provider != nil {
 			provider = *file.Provider
 		}
-		var size int64 = int64(math.Round(file.Size))
 
 		files = append(files, &models.File{
 			ID:       file.ID,
@@ -138,7 +136,7 @@ func (f FileRepo) GetFiles() ([]*models.File, error) {
 			Hash:     file.Hash,
 			Type:     file.Mime,
 			Ext:      file.Ext,
-			Size:     size,
+			Size:     file.Size,
 			Width:    file.Width,
 			Height:   file.Height,
 			Provider: provider,
@@ -169,7 +167,6 @@ func (f FileRepo) GetFileByName(name string) (*models.File, error) {
 		if file.Provider != nil {
 			provider = *file.Provider
 		}
-		var size int64 = int64(math.Round(file.Size))
 
 		return &models.File{
 			ID:       file.ID,
@@ -180,7 +177,7 @@ func (f FileRepo) GetFileByName(name string) (*models.File, error) {
 			Hash:     file.Hash,
 			Type:     file.Mime,
 			Ext:      file.Ext,
-			Size:     size,
+			Size:     file.Size,
 			Width:    file.Width,
 			Height:   file.Height,
 			Provider: provider,
@@ -210,7 +207,6 @@ func (f FileRepo) GetFileByID(id int64) (*models.File, error) {
 		if file.Provider != nil {
 			provider = *file.Provider
 		}
-		var size int64 = int64(math.Round(file.Size))
 
 		return &models.File{
 			ID:       file.ID,
@@ -221,7 +217,7 @@ func (f FileRepo) GetFileByID(id int64) (*models.File, error) {
 			Hash:     file.Hash,
 			Type:     file.Mime,
 			Ext:      file.Ext,
-			Size:     size,
+			Size:     file.Size,
 			Width:    file.Width,
 			Height:   file.Height,
 			Provider: provider,
@@ -263,7 +259,6 @@ func (f FileRepo) GetPublicFilesByProvider(_provider string) ([]*models.PublicFi
 		if file.Provider != nil {
 			provider = *file.Provider
 		}
-		var size int64 = int64(math.Round(file.Size))
 
 		files = append(files, &models.PublicFile{
 			ID: file.ID,
@@ -276,7 +271,7 @@ func (f FileRepo) GetPublicFilesByProvider(_provider string) ([]*models.PublicFi
 				Mime:     file.Mime,
 				Name:     file.Name,
 				Provider: provider,
-				Size:     size,
+				Size:     file.Size,
 				URL:      file.Url,
 				Width:    file.Width,
 				Created:  file.Created,
