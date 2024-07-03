@@ -157,7 +157,6 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 					}
 				}
 			}
-
 		}
 
 		switch ext {
