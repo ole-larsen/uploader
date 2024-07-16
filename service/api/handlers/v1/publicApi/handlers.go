@@ -78,8 +78,6 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 
 		src := a.getSource(w, dir, filename, ext)
 
-		fmt.Println(name, ext, src, dir, filename)
-
 		if src == nil {
 			return
 		}
@@ -429,7 +427,6 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 
 	sourceExt := a.extractExt(filename)
 
-	fmt.Println(filename, ext, sourceExt)
 	switch sourceExt {
 	case "svg":
 		src, err := a.decodeBaseSVG(input)
@@ -447,7 +444,6 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 		}
 		return src
 	}
-	return nil
 }
 
 func (a *API) decodeBaseSVG(r io.Reader) (image.Image, error) {
