@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -22,6 +23,8 @@ import (
 	"github.com/ole-larsen/uploader/service"
 	"github.com/ole-larsen/uploader/service/api/handlers/v1/uploaderApi"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/srwiley/oksvg"
+	"github.com/srwiley/rasterx"
 	"golang.org/x/image/draw"
 )
 
@@ -47,12 +50,14 @@ func (a *API) GetMetrics(params instruments.GetMetricsParams) middleware.Respond
 
 func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responder {
 	return middleware.ResponderFunc(func(w http.ResponseWriter, p runtime.Producer) {
+		fmt.Println("-------------------------------------")
 		path := strings.Split(params.HTTPRequest.URL.Path, "/")
 		dir := strings.Replace(strings.Join(path[:len(path)-1], "/"), "/api/v1/files", uploaderApi.UPLOAD_DIR, 1)
 
 		encodedFilename := path[len(path)-1]
 
 		filename, err := url.QueryUnescape(encodedFilename)
+
 		if err != nil {
 			a.internalError(w, err)
 			return
@@ -71,7 +76,9 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 			return
 		}
 
-		src := a.getSource(w, dir, filename)
+		src := a.getSource(w, dir, filename, ext)
+
+		fmt.Println(name, ext, src, dir, filename)
 
 		if src == nil {
 			return
@@ -406,10 +413,10 @@ func (a *API) getSize(src image.Image, pw *float64, pdpr *float64) (float64, flo
 	return width, height
 }
 
-func (a *API) getSource(w http.ResponseWriter, dir string, filename string) image.Image {
+func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext string) image.Image {
 	input, err := os.Open(dir + "/" + filename)
 	if err != nil {
-		a.internalError(w, err)
+		a.internalError(rw, err)
 		return nil
 	}
 
@@ -420,11 +427,40 @@ func (a *API) getSource(w http.ResponseWriter, dir string, filename string) imag
 		}
 	}(input)
 
-	// decode source file
-	src, _, err := image.Decode(input)
-	if err != nil {
-		a.internalError(w, err)
-		return nil
+	sourceExt := a.extractExt(filename)
+
+	fmt.Println(filename, ext, sourceExt)
+	switch sourceExt {
+	case "svg":
+		src, err := a.decodeBaseSVG(input)
+		if err != nil {
+			a.internalError(rw, err)
+			return nil
+		}
+		return src
+	default:
+		// decode source file
+		src, _, err := image.Decode(input)
+		if err != nil {
+			a.internalError(rw, err)
+			return nil
+		}
+		return src
 	}
-	return src
+	return nil
+}
+
+func (a *API) decodeBaseSVG(r io.Reader) (image.Image, error) {
+	icon, err := oksvg.ReadIconStream(r)
+	if err != nil {
+		return nil, err
+	}
+
+	w, h := int(icon.ViewBox.W), int(icon.ViewBox.H)
+	icon.SetTarget(0, 0, float64(w), float64(h))
+
+	rgba := image.NewRGBA(image.Rect(0, 0, w, h))
+	icon.Draw(rasterx.NewDasher(w, h, rasterx.NewScannerGV(w, h, rgba, rgba.Bounds())), 1)
+
+	return rgba, err
 }
