@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -137,6 +136,9 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 			case "pdf":
 				a.serveFile(w, uploaderApi.UPLOAD_DIR, filename)
 				return
+			case "svg":
+				a.serveFile(w, uploaderApi.UPLOAD_DIR, filename)
+				return
 			default:
 				a.service.Logger.Errorln(name, ext)
 				return
@@ -176,6 +178,9 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 				a.internalError(w, err)
 			}
 		case "pdf":
+			a.serveFile(w, uploaderApi.UPLOAD_DIR, filename)
+			return
+		case "svg":
 			a.serveFile(w, uploaderApi.UPLOAD_DIR, filename)
 			return
 		default:
@@ -310,7 +315,7 @@ func (a *API) decodeJPG(src image.Image, dir string, filename string, width int,
 }
 
 func (a *API) serveFile(w http.ResponseWriter, path string, filename string) {
-	buf, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", path, filename))
+	buf, err := os.ReadFile(fmt.Sprintf("%s/%s", path, filename))
 
 	if err != nil {
 		a.service.Logger.Errorln(err)
