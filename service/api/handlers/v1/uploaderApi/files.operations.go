@@ -18,7 +18,7 @@ import (
 	"github.com/ole-larsen/uploader/service/settings"
 )
 
-func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *models.Principal) (*models.PublicFile, error) {
+func (a *API) postFiles(params uploader.PostUploaderFilesParams, _ *models.Principal) (*models.PublicFile, error) {
 	file, fileHeader, err := params.HTTPRequest.FormFile("file")
 
 	defer func(file multipart.File) {
