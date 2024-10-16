@@ -70,6 +70,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 	}
 
 	attributes["name"] = filename
+
 	attributes["alt"] = params.HTTPRequest.Form.Get("alt")
 	attributes["caption"] = params.HTTPRequest.Form.Get("caption")
 	attributes["mime"] = params.HTTPRequest.Form.Get("type")
@@ -98,6 +99,10 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 		}
 	}
 
+	fmt.Println("--------------------------------")
+	fmt.Println(attributes)
+	fmt.Println("--------------------------------")
+
 	if _, err = os.Stat(UPLOAD_DIR); os.IsNotExist(err) {
 		err = os.MkdirAll(UPLOAD_DIR, os.ModePerm)
 		if err != nil {
@@ -117,6 +122,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 
 	if settings.Settings.UseDB {
 		if err = a.service.Files.Create(attributes); err != nil {
+			fmt.Println("OK store to database", err)
 			return nil, err
 		}
 	}
@@ -126,10 +132,12 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, principal *mode
 	if settings.Settings.UseHash {
 		_, err = a.createFile(file, UPLOAD_DIR, hash, ext)
 		if err != nil {
+			fmt.Println("OK store to disk", err)
 			return nil, err
 		}
 	} else {
 		_, err = a.createFile(file, UPLOAD_DIR, name, ext)
+		fmt.Println("OK store to disk", err)
 		if err != nil {
 			return nil, err
 		}
@@ -253,14 +261,15 @@ func (a *API) putFiles(params uploader.PutUploaderFilesParams, principal *models
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("PUT file:", attributes)
 	return a.service.Files.Update(attributes)
 }
 
-func (a *API) getFilesID(params uploader.GetUploaderFilesIDParams, principal *models.Principal) (*models.File, error) {
+func (a *API) getFilesID(params uploader.GetUploaderFilesIDParams, _ *models.Principal) (*models.File, error) {
 	return a.service.Files.GetFileByID(params.ID)
 }
 
-func (a *API) getFiles(params uploader.GetUploaderFilesParams, principal *models.Principal) ([]*models.File, error) {
+func (a *API) getFiles(params uploader.GetUploaderFilesParams, _ *models.Principal) ([]*models.File, error) {
 	if params.Name != nil {
 		name := *params.Name
 		ext := filepath.Ext(name)
