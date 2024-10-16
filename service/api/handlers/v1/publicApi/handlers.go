@@ -82,6 +82,11 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 			return
 		}
 
+		if strings.Contains(ext, "pdf") {
+			a.service.Logger.Infoln("[serve pdf]", dir, name, ext)
+			a.serveFile(w, uploaderApi.UPLOAD_DIR, filename)
+			return
+		}
 		width, height := a.getSize(src, params.W, params.Dpr)
 
 		// create folder by dimensions if not exists
