@@ -139,6 +139,11 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, _ *models.Princ
 		}
 	}
 	fmt.Println("EXTENSION FROM FILE", ext)
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		fmt.Println("error from seek", err)
+		return nil, err
+	}
 	switch ext {
 	case ".webp":
 		loadedImage, err := webp.Decode(file)
