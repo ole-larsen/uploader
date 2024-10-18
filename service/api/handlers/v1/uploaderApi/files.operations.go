@@ -140,7 +140,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, _ *models.Princ
 	}
 	fmt.Println("EXTENSION FROM FILE", ext)
 	switch ext {
-	case "webp":
+	case ".webp":
 		loadedImage, err := webp.Decode(file)
 		if err != nil {
 			fmt.Println("error from webp decode", err)
@@ -152,7 +152,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, _ *models.Princ
 		}
 		fmt.Printf("Hash: %s\n", str)
 		attributes["blur"] = str
-	case "png":
+	case ".png":
 		loadedImage, err := png.Decode(file)
 		if err != nil {
 			fmt.Println("error from png decode", err)
@@ -164,7 +164,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, _ *models.Princ
 		}
 		fmt.Printf("Hash: %s\n", str)
 		attributes["blur"] = str
-	case "jpg", "jpeg":
+	case ".jpg", ".jpeg":
 		loadedImage, err := jpeg.Decode(file)
 		if err != nil {
 			fmt.Println("error from jpg decode", err)
@@ -176,7 +176,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, _ *models.Princ
 		}
 		fmt.Printf("Hash: %s\n", str)
 		attributes["blur"] = str
-	case "pdf", "svg":
+	case ".pdf", ".svg":
 	default:
 		a.service.Logger.Errorln(name, ext)
 	}
