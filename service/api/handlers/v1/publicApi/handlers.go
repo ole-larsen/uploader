@@ -122,7 +122,6 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 			// file not exists
 			switch ext {
 			case "webp":
-
 				err = a.decodeWEBP(src, dir, name+"."+ext, int(width), int(height))
 				if err != nil {
 					a.internalError(w, err)

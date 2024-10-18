@@ -3,6 +3,8 @@ package uploaderApi
 import (
 	"crypto/sha256"
 	"fmt"
+	"image/jpeg"
+	"image/png"
 	"io"
 	"mime/multipart"
 	"net/url"
@@ -12,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buckket/go-blurhash"
+	"github.com/chai2010/webp"
 	"github.com/ole-larsen/uploader/models"
 	"github.com/ole-larsen/uploader/restapi/operations/uploader"
 	"github.com/ole-larsen/uploader/service/db/repository"
@@ -119,14 +123,6 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, _ *models.Princ
 			}
 		}
 	}
-
-	if settings.Settings.UseDB {
-		if err = a.service.Files.Create(attributes); err != nil {
-			fmt.Println("OK store to database", err)
-			return nil, err
-		}
-	}
-
 	name, _ := attributes["name"].(string)
 
 	if settings.Settings.UseHash {
@@ -139,6 +135,55 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, _ *models.Princ
 		_, err = a.createFile(file, UPLOAD_DIR, name, ext)
 		fmt.Println("OK store to disk", err)
 		if err != nil {
+			return nil, err
+		}
+	}
+	fmt.Println("EXTENSION FROM FILE", ext)
+	switch ext {
+	case "webp":
+		loadedImage, err := webp.Decode(file)
+		if err != nil {
+			fmt.Println("error from webp decode", err)
+			return nil, err
+		}
+		str, _ := blurhash.Encode(4, 3, loadedImage)
+		if err != nil {
+			fmt.Println("error from blurhash encode", err)
+		}
+		fmt.Printf("Hash: %s\n", str)
+		attributes["blur"] = str
+	case "png":
+		loadedImage, err := png.Decode(file)
+		if err != nil {
+			fmt.Println("error from png decode", err)
+			return nil, err
+		}
+		str, _ := blurhash.Encode(4, 3, loadedImage)
+		if err != nil {
+			fmt.Println("error from blurhash encode", err)
+		}
+		fmt.Printf("Hash: %s\n", str)
+		attributes["blur"] = str
+	case "jpg", "jpeg":
+		loadedImage, err := jpeg.Decode(file)
+		if err != nil {
+			fmt.Println("error from jpg decode", err)
+			return nil, err
+		}
+		str, _ := blurhash.Encode(4, 3, loadedImage)
+		if err != nil {
+			fmt.Println("error from blurhash encode", err)
+		}
+		fmt.Printf("Hash: %s\n", str)
+		attributes["blur"] = str
+	case "pdf", "svg":
+	default:
+		a.service.Logger.Errorln(name, ext)
+	}
+
+	if settings.Settings.UseDB {
+		if err = a.service.Files.Create(attributes); err != nil {
+			fmt.Println("OK store to database", err)
 			return nil, err
 		}
 	}
