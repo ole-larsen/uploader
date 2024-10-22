@@ -151,7 +151,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, _ *models.Princ
 			fmt.Println("error from webp decode", err)
 			return nil, err
 		}
-		str, _ := blurhash.Encode(4, 3, loadedImage)
+		str, err := blurhash.Encode(4, 3, loadedImage)
 		if err != nil {
 			fmt.Println("error from blurhash encode", err)
 		}
@@ -163,7 +163,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, _ *models.Princ
 			fmt.Println("error from png decode", err)
 			return nil, err
 		}
-		str, _ := blurhash.Encode(4, 3, loadedImage)
+		str, err := blurhash.Encode(4, 3, loadedImage)
 		if err != nil {
 			fmt.Println("error from blurhash encode", err)
 		}
@@ -175,7 +175,7 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, _ *models.Princ
 			fmt.Println("error from jpg decode", err)
 			return nil, err
 		}
-		str, _ := blurhash.Encode(4, 3, loadedImage)
+		str, err := blurhash.Encode(4, 3, loadedImage)
 		if err != nil {
 			fmt.Println("error from blurhash encode", err)
 		}
@@ -185,7 +185,8 @@ func (a *API) postFiles(params uploader.PostUploaderFilesParams, _ *models.Princ
 	default:
 		a.service.Logger.Errorln(name, ext)
 	}
-
+	fmt.Println("*********************************************")
+	fmt.Println(ext, attributes)
 	if settings.Settings.UseDB {
 		if err = a.service.Files.Create(attributes); err != nil {
 			fmt.Println("OK store to database", err)
