@@ -334,13 +334,17 @@ func (a *API) serveFile(w http.ResponseWriter, path string, filename string) {
 
 	a.service.Logger.Infoln("serve", filename, ext)
 
-	contentType := fmt.Sprintf("image/%s", ext)
+	contentType := ""
 
 	if ext == "svg" {
 		contentType = fmt.Sprintf("image/%s+xml", ext)
 	}
 
 	if ext == "jpeg" {
+		contentType = fmt.Sprintf("image/%s", "jpg")
+	}
+
+	if ext == "jpg" {
 		contentType = fmt.Sprintf("image/%s", "jpg")
 	}
 
@@ -355,6 +359,19 @@ func (a *API) serveFile(w http.ResponseWriter, path string, filename string) {
 	if ext == "webp" {
 		contentType = fmt.Sprintf("image/%s", ext)
 	}
+
+	if ext == "m4v" {
+		contentType = fmt.Sprintf("video/%s", ext)
+	}
+
+	if ext == "mp4" {
+		contentType = fmt.Sprintf("video/%s", ext)
+	}
+
+	if ext == "mov" {
+		contentType = fmt.Sprintf("video/%s", ext)
+	}
+
 	w.Header().Set("Content-Type", contentType)
 	w.Write(buf)
 }
