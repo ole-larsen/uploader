@@ -519,10 +519,10 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 		switch orientation {
 		case 6: // Rotated 90 degrees clockwise
 			fmt.Println("Rotating 90 degrees clockwise")
-			correctedImg = imaging.Rotate90(img)
+			correctedImg = imaging.Rotate270(img)
 		case 8: // Rotated 90 degrees counterclockwise
 			fmt.Println("Rotating 90 degrees counterclockwise")
-			correctedImg = imaging.Rotate270(img)
+			correctedImg = imaging.Rotate90(img)
 		case 3: // Rotated 180 degrees
 			fmt.Println("Rotating 180 degrees")
 			correctedImg = imaging.Rotate180(img)
