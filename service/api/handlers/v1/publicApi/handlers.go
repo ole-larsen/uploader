@@ -1,6 +1,7 @@
 package publicApi
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -331,6 +332,16 @@ func (a *API) serveFile(w http.ResponseWriter, path string, filename string) {
 	if err != nil {
 		a.service.Logger.Errorln(err)
 	}
+
+	// Decode the image
+	img, _, err := image.DecodeConfig(bytes.NewReader(buf))
+	if err != nil {
+		fmt.Println("Error decoding image:", err)
+		return
+	}
+
+	// Extract width and height
+	fmt.Printf("Original Width: %d, Height: %d\n", img.Width, img.Height)
 
 	ext := strings.Replace(filepath.Ext(filename), ".", "", 1)
 
