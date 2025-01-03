@@ -3,7 +3,6 @@ package publicApi
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -25,7 +24,6 @@ import (
 	"github.com/ole-larsen/uploader/service"
 	"github.com/ole-larsen/uploader/service/api/handlers/v1/uploaderApi"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/rwcarlsen/goexif/exif"
 	"github.com/srwiley/oksvg"
 	"github.com/srwiley/rasterx"
 	"golang.org/x/image/draw"
@@ -79,9 +77,9 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 			return
 		}
 
-		src := a.getSource(w, dir, filename, ext)
-
-		if src == nil {
+		img := a.getSource(w, dir, filename, ext)
+		fmt.Println(img)
+		if img == nil {
 			return
 		}
 
@@ -91,7 +89,7 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 			return
 		}
 
-		width, height := a.getSize(src, params.W, params.Dpr)
+		width, height := a.getSize(img, params.W, params.Dpr)
 		// create folder by dimensions if not exists
 		if params.W != nil {
 			sWidth := fmt.Sprintf("%d", int(*params.W))
@@ -125,21 +123,21 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 			// file not exists
 			switch ext {
 			case "webp":
-				err = a.decodeWEBP(src, dir, name+"."+ext, width, height)
+				err = a.decodeWEBP(img, dir, name+"."+ext, width, height)
 				if err != nil {
 					a.internalError(w, err)
 					return
 				}
 				a.service.Logger.Infoln("create =>", dir+"/"+sWidth, name+"."+ext)
 			case "png":
-				err = a.decodePNG(src, dir, name+"."+ext, width, height)
+				err = a.decodePNG(img, dir, name+"."+ext, width, height)
 				if err != nil {
 					a.internalError(w, err)
 					return
 				}
 				a.service.Logger.Infoln("create =>", dir+"/"+sWidth, name+"."+ext)
 			case "jpg":
-				err = a.decodeJPG(src, dir, name+"."+ext, width, height)
+				err = a.decodeJPG(img, dir, name+"."+ext, width, height)
 				if err != nil {
 					a.internalError(w, err)
 					return
@@ -177,17 +175,17 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 
 		switch ext {
 		case "webp":
-			err = a.decodeBaseWEBP(src, dir, name+"."+ext)
+			err = a.decodeBaseWEBP(img, dir, name+"."+ext)
 			if err != nil {
 				a.internalError(w, err)
 			}
 		case "png":
-			err = a.decodeBasePNG(src, dir, name+"."+ext)
+			err = a.decodeBasePNG(img, dir, name+"."+ext)
 			if err != nil {
 				a.internalError(w, err)
 			}
 		case "jpg":
-			err = a.decodeBaseJPG(src, dir, name+"."+ext)
+			err = a.decodeBaseJPG(img, dir, name+"."+ext)
 			if err != nil {
 				a.internalError(w, err)
 			}
@@ -215,7 +213,7 @@ func (a *API) extractExt(filename string) string {
 	return parts[len(parts)-1]
 }
 
-func (a *API) decodeBaseWEBP(img image.Image, dir string, filename string) error {
+func (a *API) decodeBaseWEBP(src image.Image, dir string, filename string) error {
 	dst, err := os.Create(fmt.Sprintf("%s/%s", dir, filename))
 	if err != nil {
 		return err
@@ -229,7 +227,7 @@ func (a *API) decodeBaseWEBP(img image.Image, dir string, filename string) error
 	}(dst)
 
 	// Encode the image in WebP format
-	return webp.Encode(dst, img, nil)
+	return webp.Encode(dst, src, nil)
 }
 
 func (a *API) decodeWEBP(src image.Image, dir string, filename string, width int, height int) error {
@@ -334,6 +332,16 @@ func (a *API) serveFile(w http.ResponseWriter, path string, filename string) {
 	if err != nil {
 		a.service.Logger.Errorln(err)
 	}
+
+	// Decode the image
+	img, _, err := image.DecodeConfig(bytes.NewReader(buf))
+	if err != nil {
+		fmt.Println("Error decoding image:", err)
+		return
+	}
+
+	// Extract width and height
+	fmt.Printf("Width: %d, Height: %d\n", img.Width, img.Height)
 
 	ext := strings.Replace(filepath.Ext(filename), ".", "", 1)
 
@@ -446,56 +454,20 @@ func (a *API) getSize(src image.Image, pw *float64, pdpr *float64) (int, int) {
 	return width, height
 }
 
-// getImageDimensionsAndOrientation returns the image dimensions and orientation
-func getImageDimensionsAndOrientation(input *os.File) (width, height int, orientation int, err error) {
-
-	// Decode the image to get dimensions
-	img, _, err := image.Decode(input)
-	if err != nil {
-		return 0, 0, 0, err
-	}
-
-	// Get raw dimensions from image.Image object
-	bounds := img.Bounds()
-	width, height = bounds.Dx(), bounds.Dy()
-
-	// Reopen the file to extract EXIF data
-	// We need to reopen the file since it's already been read into `img`
-	input.Seek(0, 0) // Reset file pointer to the beginning
-	xif, err := exif.Decode(input)
-	if err != nil {
-		if err.Error() != "no EXIF data" {
-			fmt.Println("Error decoding EXIF:", err)
-		}
-		return width, height, 0, nil // No EXIF found, just return the raw dimensions
-	}
-
-	// Extract orientation from EXIF
-	orientationTag, err := xif.Get(exif.Orientation)
-	if err != nil {
-		return width, height, 0, nil // No orientation tag in EXIF, return 0
-	}
-
-	orientation, _ = orientationTag.Int(0)
-	return width, height, orientation, nil
-}
-
 func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext string) image.Image {
-
-	// Open the image file using the directory and filename
 	input, err := os.Open(dir + "/" + filename)
 	if err != nil {
-		// Handle error (you can replace this with your custom error handling)
-		fmt.Println("Error opening file:", err)
+		a.internalError(rw, err)
 		return nil
 	}
-	defer func() {
-		if cerr := input.Close(); cerr != nil {
-			fmt.Println("Error closing file:", cerr)
-		}
-	}()
 
-	fmt.Println(getImageDimensionsAndOrientation(input))
+	defer func(input *os.File) {
+		err = input.Close()
+		if err != nil {
+			a.service.Logger.Errorln(err)
+		}
+	}(input)
+
 	sourceExt := a.extractExt(filename)
 
 	fmt.Printf("sourceExt %s, ext %s\n", sourceExt, ext)
@@ -532,100 +504,4 @@ func (a *API) decodeBaseSVG(r io.Reader) (image.Image, error) {
 	icon.Draw(rasterx.NewDasher(w, h, rasterx.NewScannerGV(w, h, rgba, rgba.Bounds())), 1)
 
 	return rgba, err
-}
-
-func getImageSize(buf []byte) error {
-	// Decode the image config to get raw dimensions
-	img, _, err := image.DecodeConfig(bytes.NewReader(buf))
-	if err != nil {
-		fmt.Println("Error decoding image:", err)
-		return err
-	}
-
-	fmt.Printf("Raw Width: %d, Height: %d\n", img.Width, img.Height)
-
-	// Read EXIF data
-	exifData, err := exif.Decode(bytes.NewReader(buf))
-	if err != nil {
-		fmt.Println("Error reading EXIF data:", err)
-		return err
-	}
-
-	// Get the orientation tag
-	orientationTag, err := exifData.Get(exif.Orientation)
-	if err != nil {
-		fmt.Println("No EXIF orientation data found")
-		fmt.Printf("Final Width: %d, Height: %d\n", img.Width, img.Height)
-		return err
-	}
-
-	orientation, _ := orientationTag.Int(0)
-	fmt.Printf("EXIF Orientation: %d\n", orientation)
-
-	// Adjust dimensions based on orientation
-	switch orientation {
-	case 6: // Rotated 90 degrees clockwise
-		fmt.Printf("Final Width: %d, Height: %d\n", img.Height, img.Width)
-	case 8: // Rotated 90 degrees counterclockwise
-		fmt.Printf("Final Width: %d, Height: %d\n", img.Height, img.Width)
-	default: // Normal or other orientations
-		fmt.Printf("Final Width: %d, Height: %d\n", img.Width, img.Height)
-	}
-	return nil
-}
-
-func getImageSizeForImg(img image.Image, buf []byte) error {
-	// Get raw dimensions from the image.Image object
-	bounds := img.Bounds()
-	width, height := bounds.Dx(), bounds.Dy()
-	fmt.Println("bounds: ", bounds)
-	fmt.Printf("Raw Width: %d, Height: %d\n", width, height)
-
-	// Attempt to decode EXIF data
-	exifData, err := exif.Decode(bytes.NewReader(buf))
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			fmt.Println("No EXIF metadata found in file.")
-		} else {
-			fmt.Println("Error reading EXIF data:", err)
-			return nil // Continue processing even if EXIF fails
-		}
-		fmt.Printf("Final Width: %d, Height: %d\n", width, height)
-	}
-
-	fmt.Println(exifData, err)
-	// // Get the orientation tag
-	// orientationTag, err := exifData.Get(exif.Orientation)
-	// if err != nil {
-	// 	fmt.Println("No EXIF orientation data found")
-	// 	fmt.Printf("Final Width: %d, Height: %d\n", width, height)
-	// 	return nil // EXIF not critical, so no hard error
-	// }
-
-	// orientation, _ := orientationTag.Int(0)
-	// fmt.Printf("EXIF Orientation: %d\n", orientation)
-
-	// // Adjust the image based on the orientation
-	// var correctedImg image.Image
-	// switch orientation {
-	// case 6: // Rotated 90 degrees clockwise
-	// 	fmt.Println("Rotating 90 degrees clockwise")
-	// 	correctedImg = imaging.Rotate90(img)
-	// case 8: // Rotated 90 degrees counterclockwise
-	// 	fmt.Println("Rotating 90 degrees counterclockwise")
-	// 	correctedImg = imaging.Rotate270(img)
-	// case 3: // Rotated 180 degrees
-	// 	fmt.Println("Rotating 180 degrees")
-	// 	correctedImg = imaging.Rotate180(img)
-	// default: // Normal or other orientations
-	// 	fmt.Println("No rotation needed")
-	// 	correctedImg = img
-	// }
-
-	// // Get corrected dimensions
-	// correctedBounds := correctedImg.Bounds()
-	// correctedWidth, correctedHeight := correctedBounds.Dx(), correctedBounds.Dy()
-	// fmt.Printf("Corrected Width: %d, Height: %d\n", correctedWidth, correctedHeight)
-
-	return nil
 }
