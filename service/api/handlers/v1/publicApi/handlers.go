@@ -458,16 +458,6 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 		}
 	}()
 
-	// Read the file into a byte slice
-	buf, err := io.ReadAll(input)
-	if err != nil {
-		a.internalError(rw, err) // Handle error while reading
-		return nil
-	}
-
-	// Now `buf` contains the entire file content as a byte slice
-	fmt.Printf("File size: %d bytes\n", len(buf))
-
 	sourceExt := a.extractExt(filename)
 
 	fmt.Printf("sourceExt %s, ext %s\n", sourceExt, ext)
@@ -488,7 +478,17 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 			a.internalError(rw, err)
 			return nil
 		}
-		// Process the image
+		fmt.Println("Process the image")
+		// Read the file into a byte slice
+		buf, err := io.ReadAll(input)
+		if err != nil {
+			a.internalError(rw, err) // Handle error while reading
+			return nil
+		}
+
+		// Now `buf` contains the entire file content as a byte slice
+		fmt.Printf("File size: %d bytes\n", len(buf))
+
 		err = getImageSizeForImg(img, buf)
 		if err != nil {
 			fmt.Println("Error processing image:", err)
