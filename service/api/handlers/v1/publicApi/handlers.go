@@ -8,6 +8,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -24,6 +25,7 @@ import (
 	"github.com/ole-larsen/uploader/service"
 	"github.com/ole-larsen/uploader/service/api/handlers/v1/uploaderApi"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rwcarlsen/goexif/exif"
 	"github.com/srwiley/oksvg"
 	"github.com/srwiley/rasterx"
 	"golang.org/x/image/draw"
@@ -487,6 +489,25 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 			a.internalError(rw, err)
 			return nil
 		}
+		// Get raw dimensions from image.Image object
+		bounds := img.Bounds()
+		wdth, hght := bounds.Dx(), bounds.Dy()
+		fmt.Println(wdth, hght)
+		// Reopen the file to extract EXIF data
+		// We need to reopen the file since it's already been read into `img`
+		input.Seek(0, 0) // Reset file pointer to the beginning
+		xif, err := exif.Decode(input)
+		if err != nil {
+			if err.Error() != "no EXIF data" {
+				log.Println("Error decoding EXIF:", err)
+			}
+		}
+		fmt.Println(xif, err)
+		// Extract orientation from EXIF
+		orientationTag, err := xif.Get(exif.Orientation)
+		fmt.Println(orientationTag, err)
+
+		//orientation, _ = orientationTag.Int(0)
 		return img
 	}
 }
