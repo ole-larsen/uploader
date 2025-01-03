@@ -80,7 +80,7 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 		}
 
 		img := a.getSource(w, dir, filename, ext)
-		fmt.Println(img)
+
 		if img == nil {
 			return
 		}
