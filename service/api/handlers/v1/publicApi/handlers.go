@@ -3,6 +3,7 @@ package publicApi
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -560,13 +561,13 @@ func getImageSizeForImg(img image.Image, buf []byte) error {
 	// Attempt to decode EXIF data
 	exifData, err := exif.Decode(bytes.NewReader(buf))
 	if err != nil {
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			fmt.Println("No EXIF metadata found in file.")
 		} else {
 			fmt.Println("Error reading EXIF data:", err)
+			return nil // Continue processing even if EXIF fails
 		}
 		fmt.Printf("Final Width: %d, Height: %d\n", width, height)
-		return nil // Continue processing even if EXIF fails
 	}
 
 	// Get the orientation tag
@@ -584,12 +585,16 @@ func getImageSizeForImg(img image.Image, buf []byte) error {
 	var correctedImg image.Image
 	switch orientation {
 	case 6: // Rotated 90 degrees clockwise
+		fmt.Println("Rotating 90 degrees clockwise")
 		correctedImg = imaging.Rotate90(img)
 	case 8: // Rotated 90 degrees counterclockwise
+		fmt.Println("Rotating 90 degrees counterclockwise")
 		correctedImg = imaging.Rotate270(img)
 	case 3: // Rotated 180 degrees
+		fmt.Println("Rotating 180 degrees")
 		correctedImg = imaging.Rotate180(img)
 	default: // Normal or other orientations
+		fmt.Println("No rotation needed")
 		correctedImg = img
 	}
 
