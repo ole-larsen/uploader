@@ -536,7 +536,7 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 		correctedWidth, correctedHeight := correctedBounds.Dx(), correctedBounds.Dy()
 		fmt.Printf("Corrected Width: %d, Height: %d\n", correctedWidth, correctedHeight)
 
-		return img
+		return correctedImg
 	}
 }
 
