@@ -24,6 +24,7 @@ import (
 	"github.com/ole-larsen/uploader/service"
 	"github.com/ole-larsen/uploader/service/api/handlers/v1/uploaderApi"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rwcarlsen/goexif/exif"
 	"github.com/srwiley/oksvg"
 	"github.com/srwiley/rasterx"
 	"golang.org/x/image/draw"
@@ -333,15 +334,42 @@ func (a *API) serveFile(w http.ResponseWriter, path string, filename string) {
 		a.service.Logger.Errorln(err)
 	}
 
-	// Decode the image
+	// Decode the image config to get raw dimensions
 	img, _, err := image.DecodeConfig(bytes.NewReader(buf))
 	if err != nil {
 		fmt.Println("Error decoding image:", err)
 		return
 	}
 
-	// Extract width and height
-	fmt.Printf("Original Width: %d, Height: %d\n", img.Width, img.Height)
+	fmt.Printf("Raw Width: %d, Height: %d\n", img.Width, img.Height)
+
+	// Read EXIF data
+	exifData, err := exif.Decode(bytes.NewReader(buf))
+	if err != nil {
+		fmt.Println("Error reading EXIF data:", err)
+		return
+	}
+
+	// Get the orientation tag
+	orientationTag, err := exifData.Get(exif.Orientation)
+	if err != nil {
+		fmt.Println("No EXIF orientation data found")
+		fmt.Printf("Final Width: %d, Height: %d\n", img.Width, img.Height)
+		return
+	}
+
+	orientation, _ := orientationTag.Int(0)
+	fmt.Printf("EXIF Orientation: %d\n", orientation)
+
+	// Adjust dimensions based on orientation
+	switch orientation {
+	case 6: // Rotated 90 degrees clockwise
+		fmt.Printf("Final Width: %d, Height: %d\n", img.Height, img.Width)
+	case 8: // Rotated 90 degrees counterclockwise
+		fmt.Printf("Final Width: %d, Height: %d\n", img.Height, img.Width)
+	default: // Normal or other orientations
+		fmt.Printf("Final Width: %d, Height: %d\n", img.Width, img.Height)
+	}
 
 	ext := strings.Replace(filepath.Ext(filename), ".", "", 1)
 
