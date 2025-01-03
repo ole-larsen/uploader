@@ -229,12 +229,13 @@ func (a *API) decodeBaseWEBP(src image.Image, dir string, filename string) error
 }
 
 func (a *API) decodeWEBP(src image.Image, dir string, filename string, width int, height int) error {
+	fmt.Printf("width: %d, height: %d\n", width, height)
+
 	// Set the expected size that you want:
 	resized := image.NewRGBA(image.Rect(0, 0, width, height))
 
 	// Resize:
-	// draw.NearestNeighbor.Scale(resized, resized.Rect, src, src.Bounds(), draw.Over, &draw.Options{})
-	fmt.Println("try to decode without resize")
+	draw.NearestNeighbor.Scale(resized, resized.Rect, src, src.Bounds(), draw.Over, &draw.Options{})
 	dst, err := os.Create(fmt.Sprintf("%s/%d/%s", dir, width, filename))
 	if err != nil {
 		return err
@@ -273,7 +274,6 @@ func (a *API) decodePNG(src image.Image, dir string, filename string, width int,
 
 	// Resize:
 	draw.NearestNeighbor.Scale(resized, resized.Rect, src, src.Bounds(), draw.Over, &draw.Options{})
-
 	dst, err := os.Create(fmt.Sprintf("%s/%d/%s", dir, width, filename))
 	if err != nil {
 		a.service.Logger.Errorln(err)
