@@ -87,6 +87,7 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 			a.serveFile(w, uploaderApi.UPLOAD_DIR, filename)
 			return
 		}
+
 		width, height := a.getSize(src, params.W, params.Dpr)
 
 		// create folder by dimensions if not exists
@@ -232,8 +233,8 @@ func (a *API) decodeWEBP(src image.Image, dir string, filename string, width int
 	resized := image.NewRGBA(image.Rect(0, 0, width, height))
 
 	// Resize:
-	draw.NearestNeighbor.Scale(resized, resized.Rect, src, src.Bounds(), draw.Over, &draw.Options{})
-
+	// draw.NearestNeighbor.Scale(resized, resized.Rect, src, src.Bounds(), draw.Over, &draw.Options{})
+	fmt.Println("try to decode without resize")
 	dst, err := os.Create(fmt.Sprintf("%s/%d/%s", dir, width, filename))
 	if err != nil {
 		return err
@@ -447,6 +448,8 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 	}(input)
 
 	sourceExt := a.extractExt(filename)
+
+	fmt.Printf("sourceExt %s, ext %s\n", sourceExt, ext)
 
 	switch sourceExt {
 	case "svg":
