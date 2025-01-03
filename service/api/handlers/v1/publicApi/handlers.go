@@ -412,33 +412,34 @@ func (a *API) getSize(src image.Image, pw *float64, pdpr *float64) (int, int) {
 	sourceWidth := bounds.Dx()
 	sourceHeight := bounds.Dy()
 
-	fmt.Printf("SourceHeight: %d, SourceWidth: %d\n",
-		sourceHeight, sourceWidth,
+	fmt.Printf("SourceWidth: %d, SourceHeight: %d\n",
+		sourceWidth, sourceHeight,
 	)
 
-	width := float64(sourceWidth)
-	height := float64(sourceHeight)
-
-	coef := height / width
+	width := sourceWidth
+	height := sourceHeight
 
 	if pw != nil {
-		width = *pw
-		height = coef * width
+
+		coef := float64(sourceHeight) / float64(sourceWidth)
+
+		width = int(*pw)
+		height = int(coef * *pw)
 	}
 
-	dpr := float64(1)
+	dpr := int(1)
 
 	if pdpr != nil {
-		dpr = *pdpr
+		dpr = int(*pdpr)
 		width = width * dpr
 		height = height * dpr
 	}
 
-	fmt.Printf("Height: %d, Width: %d\n",
+	fmt.Printf("Width: %d, Height: %d\n",
 		int(width), int(height),
 	)
 
-	return int(width), int(height)
+	return width, height
 }
 
 func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext string) image.Image {
