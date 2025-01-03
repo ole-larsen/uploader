@@ -436,7 +436,7 @@ func (a *API) getSize(src image.Image, pw *float64, pdpr *float64) (int, int) {
 	}
 
 	fmt.Printf("Width: %d, Height: %d\n",
-		int(width), int(height),
+		width, height,
 	)
 
 	return width, height
