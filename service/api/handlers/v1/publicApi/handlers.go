@@ -89,7 +89,6 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 		}
 
 		width, height := a.getSize(src, params.W, params.Dpr)
-		fmt.Printf("width: %d, height: %d\n", width, height)
 		// create folder by dimensions if not exists
 		if params.W != nil {
 			sWidth := fmt.Sprintf("%d", int(*params.W))
@@ -170,6 +169,8 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 				}
 			}
 		}
+
+		fmt.Printf("ext: %s, width: %d, height: %d\n", ext, width, height)
 
 		switch ext {
 		case "webp":
