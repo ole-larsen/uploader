@@ -558,12 +558,17 @@ func getImageSizeForImg(img image.Image, buf []byte) error {
 	width, height := bounds.Dx(), bounds.Dy()
 	fmt.Printf("Raw Width: %d, Height: %d\n", width, height)
 
-	// Read EXIF data from the raw bytes (buf)
+	// Attempt to decode EXIF data
 	exifData, err := exif.Decode(bytes.NewReader(buf))
 	if err != nil {
-		fmt.Println("Error reading EXIF data:", err)
+		// If EOF or no EXIF metadata, log and continue
+		if err == io.EOF {
+			fmt.Println("No EXIF metadata found in file.")
+		} else {
+			fmt.Println("Error reading EXIF data:", err)
+		}
 		fmt.Printf("Final Width: %d, Height: %d\n", width, height)
-		return err
+		return nil // Continue processing even if EXIF fails
 	}
 
 	// Get the orientation tag
