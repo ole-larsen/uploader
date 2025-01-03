@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/chai2010/webp"
+	"github.com/disintegration/imaging"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/nfnt/resize"
@@ -214,7 +215,7 @@ func (a *API) extractExt(filename string) string {
 	return parts[len(parts)-1]
 }
 
-func (a *API) decodeBaseWEBP(src image.Image, dir string, filename string) error {
+func (a *API) decodeBaseWEBP(img image.Image, dir string, filename string) error {
 	dst, err := os.Create(fmt.Sprintf("%s/%s", dir, filename))
 	if err != nil {
 		return err
@@ -228,7 +229,7 @@ func (a *API) decodeBaseWEBP(src image.Image, dir string, filename string) error
 	}(dst)
 
 	// Encode the image in WebP format
-	return webp.Encode(dst, src, nil)
+	return webp.Encode(dst, img, nil)
 }
 
 func (a *API) decodeWEBP(src image.Image, dir string, filename string, width int, height int) error {
@@ -332,43 +333,6 @@ func (a *API) serveFile(w http.ResponseWriter, path string, filename string) {
 
 	if err != nil {
 		a.service.Logger.Errorln(err)
-	}
-
-	// Decode the image config to get raw dimensions
-	img, _, err := image.DecodeConfig(bytes.NewReader(buf))
-	if err != nil {
-		fmt.Println("Error decoding image:", err)
-		return
-	}
-
-	fmt.Printf("Raw Width: %d, Height: %d\n", img.Width, img.Height)
-
-	// Read EXIF data
-	exifData, err := exif.Decode(bytes.NewReader(buf))
-	if err != nil {
-		fmt.Println("Error reading EXIF data:", err)
-		return
-	}
-
-	// Get the orientation tag
-	orientationTag, err := exifData.Get(exif.Orientation)
-	if err != nil {
-		fmt.Println("No EXIF orientation data found")
-		fmt.Printf("Final Width: %d, Height: %d\n", img.Width, img.Height)
-		return
-	}
-
-	orientation, _ := orientationTag.Int(0)
-	fmt.Printf("EXIF Orientation: %d\n", orientation)
-
-	// Adjust dimensions based on orientation
-	switch orientation {
-	case 6: // Rotated 90 degrees clockwise
-		fmt.Printf("Final Width: %d, Height: %d\n", img.Height, img.Width)
-	case 8: // Rotated 90 degrees counterclockwise
-		fmt.Printf("Final Width: %d, Height: %d\n", img.Height, img.Width)
-	default: // Normal or other orientations
-		fmt.Printf("Final Width: %d, Height: %d\n", img.Width, img.Height)
 	}
 
 	ext := strings.Replace(filepath.Ext(filename), ".", "", 1)
@@ -485,16 +449,24 @@ func (a *API) getSize(src image.Image, pw *float64, pdpr *float64) (int, int) {
 func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext string) image.Image {
 	input, err := os.Open(dir + "/" + filename)
 	if err != nil {
-		a.internalError(rw, err)
+		a.internalError(rw, err) // Handle the error appropriately
+		return nil
+	}
+	defer func() {
+		if cerr := input.Close(); cerr != nil {
+			a.service.Logger.Errorln("Error closing file:", cerr)
+		}
+	}()
+
+	// Read the file into a byte slice
+	buf, err := io.ReadAll(input)
+	if err != nil {
+		a.internalError(rw, err) // Handle error while reading
 		return nil
 	}
 
-	defer func(input *os.File) {
-		err = input.Close()
-		if err != nil {
-			a.service.Logger.Errorln(err)
-		}
-	}(input)
+	// Now `buf` contains the entire file content as a byte slice
+	fmt.Printf("File size: %d bytes\n", len(buf))
 
 	sourceExt := a.extractExt(filename)
 
@@ -509,13 +481,19 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 		}
 		return src
 	default:
+
 		// decode source file
-		src, _, err := image.Decode(input)
+		img, _, err := image.Decode(input)
 		if err != nil {
 			a.internalError(rw, err)
 			return nil
 		}
-		return src
+		// Process the image
+		err = getImageSizeForImg(img, buf)
+		if err != nil {
+			fmt.Println("Error processing image:", err)
+		}
+		return img
 	}
 }
 
@@ -532,4 +510,90 @@ func (a *API) decodeBaseSVG(r io.Reader) (image.Image, error) {
 	icon.Draw(rasterx.NewDasher(w, h, rasterx.NewScannerGV(w, h, rgba, rgba.Bounds())), 1)
 
 	return rgba, err
+}
+
+func getImageSize(buf []byte) error {
+	// Decode the image config to get raw dimensions
+	img, _, err := image.DecodeConfig(bytes.NewReader(buf))
+	if err != nil {
+		fmt.Println("Error decoding image:", err)
+		return err
+	}
+
+	fmt.Printf("Raw Width: %d, Height: %d\n", img.Width, img.Height)
+
+	// Read EXIF data
+	exifData, err := exif.Decode(bytes.NewReader(buf))
+	if err != nil {
+		fmt.Println("Error reading EXIF data:", err)
+		return err
+	}
+
+	// Get the orientation tag
+	orientationTag, err := exifData.Get(exif.Orientation)
+	if err != nil {
+		fmt.Println("No EXIF orientation data found")
+		fmt.Printf("Final Width: %d, Height: %d\n", img.Width, img.Height)
+		return err
+	}
+
+	orientation, _ := orientationTag.Int(0)
+	fmt.Printf("EXIF Orientation: %d\n", orientation)
+
+	// Adjust dimensions based on orientation
+	switch orientation {
+	case 6: // Rotated 90 degrees clockwise
+		fmt.Printf("Final Width: %d, Height: %d\n", img.Height, img.Width)
+	case 8: // Rotated 90 degrees counterclockwise
+		fmt.Printf("Final Width: %d, Height: %d\n", img.Height, img.Width)
+	default: // Normal or other orientations
+		fmt.Printf("Final Width: %d, Height: %d\n", img.Width, img.Height)
+	}
+	return nil
+}
+
+func getImageSizeForImg(img image.Image, buf []byte) error {
+	// Get raw dimensions from the image.Image object
+	bounds := img.Bounds()
+	width, height := bounds.Dx(), bounds.Dy()
+	fmt.Printf("Raw Width: %d, Height: %d\n", width, height)
+
+	// Read EXIF data from the raw bytes (buf)
+	exifData, err := exif.Decode(bytes.NewReader(buf))
+	if err != nil {
+		fmt.Println("Error reading EXIF data:", err)
+		fmt.Printf("Final Width: %d, Height: %d\n", width, height)
+		return err
+	}
+
+	// Get the orientation tag
+	orientationTag, err := exifData.Get(exif.Orientation)
+	if err != nil {
+		fmt.Println("No EXIF orientation data found")
+		fmt.Printf("Final Width: %d, Height: %d\n", width, height)
+		return nil // EXIF not critical, so no hard error
+	}
+
+	orientation, _ := orientationTag.Int(0)
+	fmt.Printf("EXIF Orientation: %d\n", orientation)
+
+	// Adjust the image based on the orientation
+	var correctedImg image.Image
+	switch orientation {
+	case 6: // Rotated 90 degrees clockwise
+		correctedImg = imaging.Rotate90(img)
+	case 8: // Rotated 90 degrees counterclockwise
+		correctedImg = imaging.Rotate270(img)
+	case 3: // Rotated 180 degrees
+		correctedImg = imaging.Rotate180(img)
+	default: // Normal or other orientations
+		correctedImg = img
+	}
+
+	// Get corrected dimensions
+	correctedBounds := correctedImg.Bounds()
+	correctedWidth, correctedHeight := correctedBounds.Dx(), correctedBounds.Dy()
+	fmt.Printf("Corrected Width: %d, Height: %d\n", correctedWidth, correctedHeight)
+
+	return nil
 }
