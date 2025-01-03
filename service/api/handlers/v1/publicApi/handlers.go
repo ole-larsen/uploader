@@ -3,6 +3,7 @@ package publicApi
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -445,18 +446,56 @@ func (a *API) getSize(src image.Image, pw *float64, pdpr *float64) (int, int) {
 	return width, height
 }
 
+// getImageDimensionsAndOrientation returns the image dimensions and orientation
+func getImageDimensionsAndOrientation(input *os.File) (width, height int, orientation int, err error) {
+
+	// Decode the image to get dimensions
+	img, _, err := image.Decode(input)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
+	// Get raw dimensions from image.Image object
+	bounds := img.Bounds()
+	width, height = bounds.Dx(), bounds.Dy()
+
+	// Reopen the file to extract EXIF data
+	// We need to reopen the file since it's already been read into `img`
+	input.Seek(0, 0) // Reset file pointer to the beginning
+	xif, err := exif.Decode(input)
+	if err != nil {
+		if err.Error() != "no EXIF data" {
+			fmt.Println("Error decoding EXIF:", err)
+		}
+		return width, height, 0, nil // No EXIF found, just return the raw dimensions
+	}
+
+	// Extract orientation from EXIF
+	orientationTag, err := xif.Get(exif.Orientation)
+	if err != nil {
+		return width, height, 0, nil // No orientation tag in EXIF, return 0
+	}
+
+	orientation, _ = orientationTag.Int(0)
+	return width, height, orientation, nil
+}
+
 func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext string) image.Image {
+
+	// Open the image file using the directory and filename
 	input, err := os.Open(dir + "/" + filename)
 	if err != nil {
-		a.internalError(rw, err) // Handle the error appropriately
+		// Handle error (you can replace this with your custom error handling)
+		fmt.Println("Error opening file:", err)
 		return nil
 	}
 	defer func() {
 		if cerr := input.Close(); cerr != nil {
-			a.service.Logger.Errorln("Error closing file:", cerr)
+			fmt.Println("Error closing file:", cerr)
 		}
 	}()
 
+	fmt.Println(getImageDimensionsAndOrientation(input))
 	sourceExt := a.extractExt(filename)
 
 	fmt.Printf("sourceExt %s, ext %s\n", sourceExt, ext)
@@ -475,21 +514,6 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 		if err != nil {
 			a.internalError(rw, err)
 			return nil
-		}
-		fmt.Println("Process the image")
-		// Read the file into a byte slice
-		buf, err := io.ReadAll(input)
-		if err != nil {
-			a.internalError(rw, err) // Handle error while reading
-			return nil
-		}
-
-		// Now `buf` contains the entire file content as a byte slice
-		fmt.Printf("File size: %d bytes\n", len(buf))
-
-		err = getImageSizeForImg(img, buf)
-		if err != nil {
-			fmt.Println("Error processing image:", err)
 		}
 		return img
 	}
@@ -558,18 +582,18 @@ func getImageSizeForImg(img image.Image, buf []byte) error {
 	fmt.Printf("Raw Width: %d, Height: %d\n", width, height)
 
 	// Attempt to decode EXIF data
-	// exifData, err := exif.Decode(bytes.NewReader(buf))
-	// if err != nil {
-	// 	if errors.Is(err, io.EOF) {
-	// 		fmt.Println("No EXIF metadata found in file.")
-	// 	} else {
-	// 		fmt.Println("Error reading EXIF data:", err)
-	// 		return nil // Continue processing even if EXIF fails
-	// 	}
-	// 	fmt.Printf("Final Width: %d, Height: %d\n", width, height)
-	// }
+	exifData, err := exif.Decode(bytes.NewReader(buf))
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			fmt.Println("No EXIF metadata found in file.")
+		} else {
+			fmt.Println("Error reading EXIF data:", err)
+			return nil // Continue processing even if EXIF fails
+		}
+		fmt.Printf("Final Width: %d, Height: %d\n", width, height)
+	}
 
-	// fmt.Println(exifData, err)
+	fmt.Println(exifData, err)
 	// // Get the orientation tag
 	// orientationTag, err := exifData.Get(exif.Orientation)
 	// if err != nil {
