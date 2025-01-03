@@ -471,7 +471,6 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 		}
 		return src
 	default:
-
 		// decode source file
 		img, _, err := image.Decode(input)
 		if err != nil {
@@ -561,7 +560,6 @@ func getImageSizeForImg(img image.Image, buf []byte) error {
 	// Attempt to decode EXIF data
 	exifData, err := exif.Decode(bytes.NewReader(buf))
 	if err != nil {
-		// If EOF or no EXIF metadata, log and continue
 		if err == io.EOF {
 			fmt.Println("No EXIF metadata found in file.")
 		} else {
