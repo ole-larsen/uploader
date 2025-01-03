@@ -16,7 +16,6 @@ import (
 	"strings"
 
 	"github.com/chai2010/webp"
-	"github.com/disintegration/imaging"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/nfnt/resize"
@@ -556,6 +555,7 @@ func getImageSizeForImg(img image.Image, buf []byte) error {
 	// Get raw dimensions from the image.Image object
 	bounds := img.Bounds()
 	width, height := bounds.Dx(), bounds.Dy()
+
 	fmt.Printf("Raw Width: %d, Height: %d\n", width, height)
 
 	// Attempt to decode EXIF data
@@ -570,38 +570,39 @@ func getImageSizeForImg(img image.Image, buf []byte) error {
 		fmt.Printf("Final Width: %d, Height: %d\n", width, height)
 	}
 
-	// Get the orientation tag
-	orientationTag, err := exifData.Get(exif.Orientation)
-	if err != nil {
-		fmt.Println("No EXIF orientation data found")
-		fmt.Printf("Final Width: %d, Height: %d\n", width, height)
-		return nil // EXIF not critical, so no hard error
-	}
+	fmt.Println(exifData, err)
+	// // Get the orientation tag
+	// orientationTag, err := exifData.Get(exif.Orientation)
+	// if err != nil {
+	// 	fmt.Println("No EXIF orientation data found")
+	// 	fmt.Printf("Final Width: %d, Height: %d\n", width, height)
+	// 	return nil // EXIF not critical, so no hard error
+	// }
 
-	orientation, _ := orientationTag.Int(0)
-	fmt.Printf("EXIF Orientation: %d\n", orientation)
+	// orientation, _ := orientationTag.Int(0)
+	// fmt.Printf("EXIF Orientation: %d\n", orientation)
 
-	// Adjust the image based on the orientation
-	var correctedImg image.Image
-	switch orientation {
-	case 6: // Rotated 90 degrees clockwise
-		fmt.Println("Rotating 90 degrees clockwise")
-		correctedImg = imaging.Rotate90(img)
-	case 8: // Rotated 90 degrees counterclockwise
-		fmt.Println("Rotating 90 degrees counterclockwise")
-		correctedImg = imaging.Rotate270(img)
-	case 3: // Rotated 180 degrees
-		fmt.Println("Rotating 180 degrees")
-		correctedImg = imaging.Rotate180(img)
-	default: // Normal or other orientations
-		fmt.Println("No rotation needed")
-		correctedImg = img
-	}
+	// // Adjust the image based on the orientation
+	// var correctedImg image.Image
+	// switch orientation {
+	// case 6: // Rotated 90 degrees clockwise
+	// 	fmt.Println("Rotating 90 degrees clockwise")
+	// 	correctedImg = imaging.Rotate90(img)
+	// case 8: // Rotated 90 degrees counterclockwise
+	// 	fmt.Println("Rotating 90 degrees counterclockwise")
+	// 	correctedImg = imaging.Rotate270(img)
+	// case 3: // Rotated 180 degrees
+	// 	fmt.Println("Rotating 180 degrees")
+	// 	correctedImg = imaging.Rotate180(img)
+	// default: // Normal or other orientations
+	// 	fmt.Println("No rotation needed")
+	// 	correctedImg = img
+	// }
 
-	// Get corrected dimensions
-	correctedBounds := correctedImg.Bounds()
-	correctedWidth, correctedHeight := correctedBounds.Dx(), correctedBounds.Dy()
-	fmt.Printf("Corrected Width: %d, Height: %d\n", correctedWidth, correctedHeight)
+	// // Get corrected dimensions
+	// correctedBounds := correctedImg.Bounds()
+	// correctedWidth, correctedHeight := correctedBounds.Dx(), correctedBounds.Dy()
+	// fmt.Printf("Corrected Width: %d, Height: %d\n", correctedWidth, correctedHeight)
 
 	return nil
 }
