@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/chai2010/webp"
+	"github.com/disintegration/imaging"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/nfnt/resize"
@@ -491,8 +492,8 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 		}
 		// Get raw dimensions from image.Image object
 		bounds := img.Bounds()
-		wdth, hght := bounds.Dx(), bounds.Dy()
-		fmt.Println(wdth, hght)
+		width, height := bounds.Dx(), bounds.Dy()
+		fmt.Println(width, height)
 		// Reopen the file to extract EXIF data
 		// We need to reopen the file since it's already been read into `img`
 		input.Seek(0, 0) // Reset file pointer to the beginning
@@ -507,7 +508,34 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 		orientationTag, err := xif.Get(exif.Orientation)
 		fmt.Println(orientationTag, err)
 
-		//orientation, _ = orientationTag.Int(0)
+		orientation, _ := orientationTag.Int(0)
+
+		fmt.Println(orientation)
+
+		fmt.Printf("EXIF Orientation: %d\n", orientation)
+
+		// Adjust the image based on the orientation
+		var correctedImg image.Image
+		switch orientation {
+		case 6: // Rotated 90 degrees clockwise
+			fmt.Println("Rotating 90 degrees clockwise")
+			correctedImg = imaging.Rotate90(img)
+		case 8: // Rotated 90 degrees counterclockwise
+			fmt.Println("Rotating 90 degrees counterclockwise")
+			correctedImg = imaging.Rotate270(img)
+		case 3: // Rotated 180 degrees
+			fmt.Println("Rotating 180 degrees")
+			correctedImg = imaging.Rotate180(img)
+		default: // Normal or other orientations
+			fmt.Println("No rotation needed")
+			correctedImg = img
+		}
+
+		// Get corrected dimensions
+		correctedBounds := correctedImg.Bounds()
+		correctedWidth, correctedHeight := correctedBounds.Dx(), correctedBounds.Dy()
+		fmt.Printf("Corrected Width: %d, Height: %d\n", correctedWidth, correctedHeight)
+
 		return img
 	}
 }
