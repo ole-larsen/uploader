@@ -89,7 +89,7 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 		}
 
 		width, height := a.getSize(src, params.W, params.Dpr)
-
+		fmt.Printf("width: %d, height: %d\n", width, height)
 		// create folder by dimensions if not exists
 		if params.W != nil {
 			sWidth := fmt.Sprintf("%d", int(*params.W))
@@ -123,21 +123,21 @@ func (a *API) GetFilesFile(params public.GetFilesFileParams) middleware.Responde
 			// file not exists
 			switch ext {
 			case "webp":
-				err = a.decodeWEBP(src, dir, name+"."+ext, int(width), int(height))
+				err = a.decodeWEBP(src, dir, name+"."+ext, width, height)
 				if err != nil {
 					a.internalError(w, err)
 					return
 				}
 				a.service.Logger.Infoln("create =>", dir+"/"+sWidth, name+"."+ext)
 			case "png":
-				err = a.decodePNG(src, dir, name+"."+ext, int(width), int(height))
+				err = a.decodePNG(src, dir, name+"."+ext, width, height)
 				if err != nil {
 					a.internalError(w, err)
 					return
 				}
 				a.service.Logger.Infoln("create =>", dir+"/"+sWidth, name+"."+ext)
 			case "jpg":
-				err = a.decodeJPG(src, dir, name+"."+ext, int(width), int(height))
+				err = a.decodeJPG(src, dir, name+"."+ext, width, height)
 				if err != nil {
 					a.internalError(w, err)
 					return
@@ -406,11 +406,15 @@ func (a *API) serveOriginal(w http.ResponseWriter, dir string, name string, ext 
 	}
 }
 
-func (a *API) getSize(src image.Image, pw *float64, pdpr *float64) (float64, float64) {
+func (a *API) getSize(src image.Image, pw *float64, pdpr *float64) (int, int) {
 	bounds := src.Bounds()
 
 	sourceWidth := bounds.Dx()
 	sourceHeight := bounds.Dy()
+
+	fmt.Printf("SourceHeight: %d, SourceWidth: %d\n",
+		sourceHeight, sourceWidth,
+	)
 
 	width := float64(sourceWidth)
 	height := float64(sourceHeight)
@@ -430,7 +434,11 @@ func (a *API) getSize(src image.Image, pw *float64, pdpr *float64) (float64, flo
 		height = height * dpr
 	}
 
-	return width, height
+	fmt.Printf("Height: %d, Width: %d\n",
+		int(width), int(height),
+	)
+
+	return int(width), int(height)
 }
 
 func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext string) image.Image {
