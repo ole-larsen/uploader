@@ -3,7 +3,6 @@ package publicApi
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -555,22 +554,22 @@ func getImageSizeForImg(img image.Image, buf []byte) error {
 	// Get raw dimensions from the image.Image object
 	bounds := img.Bounds()
 	width, height := bounds.Dx(), bounds.Dy()
-
+	fmt.Println("bounds: ", bounds)
 	fmt.Printf("Raw Width: %d, Height: %d\n", width, height)
 
 	// Attempt to decode EXIF data
-	exifData, err := exif.Decode(bytes.NewReader(buf))
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			fmt.Println("No EXIF metadata found in file.")
-		} else {
-			fmt.Println("Error reading EXIF data:", err)
-			return nil // Continue processing even if EXIF fails
-		}
-		fmt.Printf("Final Width: %d, Height: %d\n", width, height)
-	}
+	// exifData, err := exif.Decode(bytes.NewReader(buf))
+	// if err != nil {
+	// 	if errors.Is(err, io.EOF) {
+	// 		fmt.Println("No EXIF metadata found in file.")
+	// 	} else {
+	// 		fmt.Println("Error reading EXIF data:", err)
+	// 		return nil // Continue processing even if EXIF fails
+	// 	}
+	// 	fmt.Printf("Final Width: %d, Height: %d\n", width, height)
+	// }
 
-	fmt.Println(exifData, err)
+	// fmt.Println(exifData, err)
 	// // Get the orientation tag
 	// orientationTag, err := exifData.Get(exif.Orientation)
 	// if err != nil {
