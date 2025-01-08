@@ -506,8 +506,11 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 		orientationTag, err := xif.Get(exif.Orientation)
 		fmt.Println(orientationTag, err)
 
-		orientation, _ := orientationTag.Int(0)
-
+		orientation, err := orientationTag.Int(0)
+		if err != nil {
+			log.Println("exif: tag Orientation is not present:", err)
+			return img
+		}
 		fmt.Printf("EXIF Orientation: %d\n", orientation)
 
 		// Adjust the image based on the orientation
