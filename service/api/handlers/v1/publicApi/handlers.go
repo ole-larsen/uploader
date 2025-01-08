@@ -490,10 +490,7 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 			a.internalError(rw, err)
 			return nil
 		}
-		// Get raw dimensions from image.Image object
-		bounds := img.Bounds()
-		width, height := bounds.Dx(), bounds.Dy()
-		fmt.Println(width, height)
+
 		// Reopen the file to extract EXIF data
 		// We need to reopen the file since it's already been read into `img`
 		input.Seek(0, 0) // Reset file pointer to the beginning
@@ -501,6 +498,7 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 		if err != nil {
 			if err.Error() != "no EXIF data" {
 				log.Println("Error decoding EXIF:", err)
+				return img
 			}
 		}
 		fmt.Println(xif, err)
@@ -509,8 +507,6 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 		fmt.Println(orientationTag, err)
 
 		orientation, _ := orientationTag.Int(0)
-
-		fmt.Println(orientation)
 
 		fmt.Printf("EXIF Orientation: %d\n", orientation)
 
