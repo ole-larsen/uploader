@@ -496,10 +496,8 @@ func (a *API) getSource(rw http.ResponseWriter, dir string, filename string, ext
 		input.Seek(0, 0) // Reset file pointer to the beginning
 		xif, err := exif.Decode(input)
 		if err != nil {
-			if err.Error() != "no EXIF data" {
-				log.Println("Error decoding EXIF:", err)
-				return img
-			}
+			log.Println("Error decoding EXIF:", err)
+			return img
 		}
 		fmt.Println(xif, err)
 		// Extract orientation from EXIF
